@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Installment Dashboard — ระบบติดตามรายจ่ายผ่อนชำระ",
+  title: "Installment Dashboard - ระบบติดตามรายจ่ายผ่อนชำระ",
   description:
-    "ติดตามรายจ่ายผ่อนชำระ สรุปยอดรายเดือน ดูแนวโน้ม 6 เดือนล่วงหน้า — Installment Expense Tracker Dashboard",
+    "ติดตามรายจ่ายผ่อนชำระ สรุปยอดรายเดือน ดูแนวโน้ม 6 เดือนล่วงหน้า Installment Expense Tracker Dashboard",
   keywords: ["expense tracker", "installment", "dashboard", "finance"],
 };
 
