@@ -212,7 +212,7 @@ export default function AddExpenseModal({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        totalInstallments: parseInt(e.target.value) || 1,
+                        totalInstallments: parseInt(e.target.value) || 0,
                       })
                     }
                     className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20"
