@@ -28,7 +28,7 @@ function getAuthClient() {
 /**
  * Get the Google Sheets API client
  */
-function getSheetsClient() {
+export function getSheetsClient() {
   const auth = getAuthClient();
   return google.sheets({ version: "v4", auth });
 }
@@ -36,7 +36,7 @@ function getSheetsClient() {
 /**
  * Get the Sheet ID and Sheet Name from environment
  */
-function getSheetConfig() {
+export function getSheetConfig() {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
   const sheetName = process.env.GOOGLE_SHEET_NAME || "Raw_Data";
 

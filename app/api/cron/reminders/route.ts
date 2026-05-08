@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     const configRows = configRes.data.values || [];
     
     // Filter with validation
-    const usersToRemind = configRows.slice(1).filter(row => {
+    const usersToRemind = (configRows.slice(1) as string[][]).filter((row: string[]) => {
       if (!row || row.length < 3) return false; // ข้ามแถวที่ข้อมูลไม่ครบ
       
       const userId = row[0];

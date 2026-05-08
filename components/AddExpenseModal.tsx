@@ -9,7 +9,7 @@ import { useSettings } from "@/hooks/useSettings";
 interface AddExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ExpenseFormData) => Promise<void>;
+  onSubmit: (data: ExpenseFormData) => Promise<boolean | void>;
 }
 
 export default function AddExpenseModal({

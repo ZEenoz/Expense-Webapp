@@ -9,7 +9,7 @@ interface ExpenseTableProps {
   expenses: Expense[];
   monthLabel: string;
   isLoading: boolean;
-  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<void>;
+  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void>;
 }
 
 export default function ExpenseTable({
@@ -187,7 +187,7 @@ function MobileCard({
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
-  onMarkPaid: (rowIndex: number, paid: boolean) => void;
+  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
 }) {
   return (
     <div
@@ -252,7 +252,7 @@ function DesktopRow({
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
-  onMarkPaid: (rowIndex: number, paid: boolean) => void;
+  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
 }) {
   const progress = (expense.currentInstallment / expense.totalInstallments) * 100;
 
@@ -331,7 +331,7 @@ function PayButton({
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
-  onMarkPaid: (rowIndex: number, paid: boolean) => void;
+  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
 }) {
   if (typeof expense.rowIndex !== "number") return null;
 
