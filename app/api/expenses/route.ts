@@ -116,11 +116,17 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { rowIndex, paid } = body as { rowIndex: number; paid: boolean };
+    const { rowIndex, rowIndices, paid } = body as { 
+      rowIndex?: number; 
+      rowIndices?: number[]; 
+      paid: boolean 
+    };
 
-    if (typeof rowIndex !== "number" || typeof paid !== "boolean") {
+    const targetIndices = rowIndices || (rowIndex !== undefined ? [rowIndex] : []);
+
+    if (targetIndices.length === 0 || typeof paid !== "boolean") {
       return NextResponse.json(
-        { success: false, error: "Invalid request. Required: rowIndex (number), paid (boolean)" },
+        { success: false, error: "Invalid request. Required: rowIndex or rowIndices, and paid" },
         { status: 400 }
       );
     }
@@ -134,25 +140,27 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Security check: Verify the row belongs to the user
+    // Security check: Verify all rows belong to the user
     const expenses = await getSheetData(userId);
-    const belongsToUser = expenses.some(e => e.rowIndex === rowIndex);
+    const userRowIndices = new Set(expenses.map(e => e.rowIndex));
     
-    if (!belongsToUser) {
+    const allBelongToUser = targetIndices.every(idx => userRowIndices.has(idx));
+    
+    if (!allBelongToUser) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized access to this record" },
+        { success: false, error: "Unauthorized access to one or more records" },
         { status: 403 }
       );
     }
 
-    // Update column H (Paid_Status) in Google Sheets
-    await updateCell(rowIndex, "H", paid ? "paid" : "");
+    // Update each cell (in a real app, we might use a batch update API, but this works for small batches)
+    for (const idx of targetIndices) {
+      await updateCell(idx, "H", paid ? "paid" : "");
+    }
 
     return NextResponse.json({
       success: true,
-      message: paid
-        ? `Installment marked as paid (row ${rowIndex + 2})`
-        : `Installment marked as unpaid (row ${rowIndex + 2})`,
+      message: `Updated ${targetIndices.length} records successfully`,
     });
   } catch (error) {
     console.error("PATCH /api/expenses error:", error);

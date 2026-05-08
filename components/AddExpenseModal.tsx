@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, Loader2, Sparkles, CheckCircle2, Sheet } from "lucide-react";
+import { X, Loader2, Sparkles, CheckCircle2, Sheet, Plus } from "lucide-react";
 import { ExpenseFormData } from "@/types/expense";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useCallback } from "react";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -15,6 +17,7 @@ export default function AddExpenseModal({
   onClose,
   onSubmit,
 }: AddExpenseModalProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ExpenseFormData>({
     itemName: "",
     totalPrice: 0,
@@ -25,6 +28,55 @@ export default function AddExpenseModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedItemName, setSavedItemName] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  const fetchCategories = useCallback(async () => {
+    if (!user?.userId) return;
+    try {
+      const res = await fetch("/api/categories", {
+        headers: { "x-user-id": user.userId }
+      });
+      const json = await res.json();
+      if (json.success) {
+        setCategories(json.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  }, [user?.userId]);
+
+  useEffect(() => {
+    if (isOpen && user?.userId) {
+      fetchCategories();
+    }
+  }, [isOpen, user?.userId, fetchCategories]);
+
+  const handleAddCategory = async () => {
+    if (!newCategory.trim() || !user?.userId) return;
+    setIsAddingCategory(true);
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": user.userId 
+        },
+        body: JSON.stringify({ categoryName: newCategory.trim() })
+      });
+      const json = await res.json();
+      if (json.success) {
+        await fetchCategories();
+        setFormData({ ...formData, category: newCategory.trim() });
+        setNewCategory("");
+      }
+    } catch (error) {
+      console.error("Failed to add category:", error);
+    } finally {
+      setIsAddingCategory(false);
+    }
+  };
 
   const monthlyPayment =
     formData.totalInstallments > 0
@@ -247,21 +299,42 @@ export default function AddExpenseModal({
                   >
                     หมวดหมู่
                   </label>
-                  <select
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) =>
-                      setFormData({ ...formData, category: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]"
-                  >
-                    <option value="" className="bg-slate-900">ไม่ระบุ</option>
-                    <option value="Electronics" className="bg-slate-900">Electronics</option>
-                    <option value="Accessories" className="bg-slate-900">Accessories</option>
-                    <option value="Furniture" className="bg-slate-900">Furniture</option>
-                    <option value="Appliances" className="bg-slate-900">Appliances</option>
-                    <option value="Other" className="bg-slate-900">Other</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]"
+                    >
+                      <option value="" className="bg-slate-900">ไม่ระบุ</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat} className="bg-slate-900">
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Quick Add Category */}
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="เพิ่มหมวดหมู่ใหม่..."
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      className="flex-1 rounded-lg border border-white/5 bg-white/5 px-3 py-1.5 text-xs text-white outline-none focus:border-violet-500/30"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCategory}
+                      disabled={isAddingCategory || !newCategory.trim()}
+                      className="rounded-lg bg-violet-500/20 px-3 py-1.5 text-xs font-medium text-violet-300 hover:bg-violet-500/30 disabled:opacity-50"
+                    >
+                      {isAddingCategory ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 

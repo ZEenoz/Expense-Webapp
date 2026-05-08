@@ -177,4 +177,51 @@ export function parseSheetRow(
     userId: row[8] || "",
     rowIndex: index,
   };
+
+/**
+ * Fetch categories for a specific user from the 'Settings' sheet
+ */
+export async function getCategories(userId: string): Promise<string[]> {
+  const sheets = getSheetsClient();
+  const { spreadsheetId } = getSheetConfig();
+  const settingsSheetName = "Settings";
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${settingsSheetName}!A:B`, // UserId, CategoryName
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return [];
+    }
+
+    // Filter by userId and return only the category names
+    return rows
+      .slice(1) // Skip header
+      .filter(row => row[0] === userId)
+      .map(row => row[1]);
+  } catch (error) {
+    console.warn("Settings sheet might not exist yet:", error);
+    return [];
+  }
+}
+
+/**
+ * Add a new category for a user
+ */
+export async function addCategory(userId: string, categoryName: string): Promise<void> {
+  const sheets = getSheetsClient();
+  const { spreadsheetId } = getSheetConfig();
+  const settingsSheetName = "Settings";
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${settingsSheetName}!A:B`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[userId, categoryName]],
+    },
+  });
 }

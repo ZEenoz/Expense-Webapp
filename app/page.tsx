@@ -18,6 +18,7 @@ import {
   getPaidUnpaidSummary,
 } from "@/lib/utils";
 import { Expense, ExpenseFormData } from "@/types/expense";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardPage() {
@@ -99,6 +100,40 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle marking all unpaid installments in selected month as paid
+  const handlePayAll = async () => {
+    if (!user?.userId || selectedMonthExpenses.items.length === 0) return;
+
+    const unpaidIndices = selectedMonthExpenses.items
+      .filter((e) => !e.paidStatus && e.rowIndex !== undefined)
+      .map((e) => e.rowIndex as number);
+
+    if (unpaidIndices.length === 0) return;
+
+    try {
+      setIsLoading(true);
+      const res = await fetch("/api/expenses", {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-user-id": user.userId
+        },
+        body: JSON.stringify({ rowIndices: unpaidIndices, paid: true }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        // Refresh data
+        await fetchExpenses();
+      } else {
+        throw new Error(json.error);
+      }
+    } catch (error) {
+      console.error("Failed to pay all:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Derived data
   const currentMonth = getCurrentMonth();
   const nextMonth = getNextMonth(currentMonth);
@@ -165,8 +200,19 @@ export default function DashboardPage() {
 
           {/* Monthly Expenses Table */}
           <div className="mb-8">
-            <div className="mb-4 flex items-center justify-between animate-fade-in-up animation-delay-400">
-              <div />
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-4 animate-fade-in-up animation-delay-400">
+              <div className="flex items-center gap-2">
+                {selectedMonthExpenses.items.some(e => !e.paidStatus) && (
+                  <button
+                    onClick={handlePayAll}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50"
+                  >
+                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    ชำระทั้งหมด ({selectedMonthExpenses.items.filter(e => !e.paidStatus).length})
+                  </button>
+                )}
+              </div>
               <MonthSelector
                 months={displayMonths}
                 selectedMonth={selectedMonth}
