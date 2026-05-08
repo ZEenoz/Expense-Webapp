@@ -177,6 +177,7 @@ export function parseSheetRow(
     userId: row[8] || "",
     rowIndex: index,
   };
+}
 
 /**
  * Fetch categories for a specific user from the 'Settings' sheet
