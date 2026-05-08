@@ -89,14 +89,16 @@ export default function DashboardPage() {
     <div className="flex min-h-screen flex-col">
       <Navbar onAddClick={() => setIsAddModalOpen(true)} />
 
-      <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">Dashboard Overview</h2>
-            <p className="mt-1 text-slate-400">สรุปภาพรวมรายจ่ายผ่อนชำระทั้งหมดของคุณ</p>
+      <main className="flex-1 pb-12">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-in-up">
+            <div>
+              <h2 className="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">Dashboard Overview</h2>
+              <p className="mt-1 text-sm text-slate-400 sm:text-base">สรุปภาพรวมรายจ่ายผ่อนชำระทั้งหมดของคุณ</p>
+            </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-10 lg:mb-12">
             <SummaryCards
               thisMonthTotal={thisMonthSummary.totalAmount}
               nextMonthTotal={nextMonthSummary.totalAmount}
@@ -111,35 +113,36 @@ export default function DashboardPage() {
           </div>
 
           <div className="mb-8">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-4 animate-fade-in-up animation-delay-400">
-              <div className="flex items-center gap-2">
-                {selectedMonthExpenses.items.some(e => !e.paidStatus) && (
-                  <button
-                    onClick={handlePayAll}
-                    disabled={isDataLoading}
-                    className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50"
-                  >
-                    {isDataLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    ชำระทั้งหมด ({selectedMonthExpenses.items.filter(e => !e.paidStatus).length})
-                  </button>
-                )}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-fade-in-up animation-delay-400">
+              <div className="flex flex-wrap items-center gap-3">
+                <MonthSelector months={displayMonths} selectedMonth={selectedMonth} onChange={setSelectedMonth} />
 
-                <div className="flex items-center gap-2 ml-2">
-                  <select
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                    className="rounded-lg bg-slate-900 border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 outline-none transition-all focus:border-violet-500/50 [color-scheme:dark]"
-                  >
-                    <option value="all" className="bg-slate-900 text-white">ทุกหมวดหมู่ ({selectedMonthExpenses.items.length})</option>
-                    {availableCategories.map(cat => (
-                      <option key={cat} value={cat} className="bg-slate-900 text-white">
-                        {cat} ({selectedMonthExpenses.items.filter(e => e.category === cat).length})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <div className="h-6 w-px bg-white/10 hidden sm:block" />
+
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="rounded-xl bg-slate-900/50 backdrop-blur-md border border-white/10 px-4 py-2 text-sm font-medium text-white outline-none transition-all hover:bg-slate-800 focus:border-violet-500/50 [color-scheme:dark] flex-1 sm:flex-none"
+                >
+                  <option value="all">ทุกหมวดหมู่ ({selectedMonthExpenses.items.length})</option>
+                  {availableCategories.map(cat => (
+                    <option key={cat} value={cat}>
+                      {cat} ({selectedMonthExpenses.items.filter(e => e.category === cat).length})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <MonthSelector months={displayMonths} selectedMonth={selectedMonth} onChange={setSelectedMonth} />
+
+              {selectedMonthExpenses.items.some(e => !e.paidStatus) && (
+                <button
+                  onClick={handlePayAll}
+                  disabled={isDataLoading}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50 w-full sm:w-auto"
+                >
+                  {isDataLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  ชำระทั้งหมด ({selectedMonthExpenses.items.filter(e => !e.paidStatus).length})
+                </button>
+              )}
             </div>
 
             <ExpenseTable

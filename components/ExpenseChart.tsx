@@ -73,7 +73,7 @@ export default function ExpenseChart({
         </div>
       </div>
 
-      <div className="h-[300px] w-full">
+      <div className="h-[300px] sm:h-[350px] lg:h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
