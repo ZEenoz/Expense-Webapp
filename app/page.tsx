@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import SummaryCards from "@/components/SummaryCards";
 import ExpenseChart from "@/components/ExpenseChart";
@@ -17,122 +17,32 @@ import {
   formatMonthThai,
   getPaidUnpaidSummary,
 } from "@/lib/utils";
-import { Expense, ExpenseFormData } from "@/types/expense";
+import { ExpenseFormData } from "@/types/expense";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useExpenses } from "@/hooks/useExpenses";
 
 export default function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const {
+    expenses,
+    isLoading: isDataLoading,
+    fetchExpenses,
+    markPaid,
+    payAll,
+    addExpense
+  } = useExpenses(user?.userId);
+
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch expenses from API
-  const fetchExpenses = useCallback(async () => {
-    if (!user?.userId) return;
-    
-    try {
-      const res = await fetch("/api/expenses", {
-        headers: {
-          "x-user-id": user.userId
-        }
-      });
-      const json = await res.json();
-      if (json.success) {
-        setExpenses(json.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch expenses:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user?.userId]);
+  const [sortBy, setSortBy] = useState<"date" | "category">("date");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
 
   useEffect(() => {
     if (user?.userId) {
       fetchExpenses();
     }
   }, [fetchExpenses, user?.userId]);
-
-  // Handle adding a new expense
-  const handleAddExpense = async (formData: ExpenseFormData) => {
-    if (!user?.userId) return;
-
-    const res = await fetch("/api/expenses", {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "x-user-id": user.userId
-      },
-      body: JSON.stringify(formData),
-    });
-    const json = await res.json();
-    if (json.success) {
-      await fetchExpenses();
-    } else {
-      throw new Error(json.error);
-    }
-  };
-
-  // Handle marking an installment as paid/unpaid
-  const handleMarkPaid = async (rowIndex: number, paid: boolean) => {
-    if (!user?.userId) return;
-
-    const res = await fetch("/api/expenses", {
-      method: "PATCH",
-      headers: { 
-        "Content-Type": "application/json",
-        "x-user-id": user.userId
-      },
-      body: JSON.stringify({ rowIndex, paid }),
-    });
-    const json = await res.json();
-    if (json.success) {
-      // Optimistic update — toggle paidStatus locally
-      setExpenses((prev) =>
-        prev.map((e) =>
-          e.rowIndex === rowIndex ? { ...e, paidStatus: paid } : e
-        )
-      );
-    } else {
-      throw new Error(json.error);
-    }
-  };
-
-  // Handle marking all unpaid installments in selected month as paid
-  const handlePayAll = async () => {
-    if (!user?.userId || selectedMonthExpenses.items.length === 0) return;
-
-    const unpaidIndices = selectedMonthExpenses.items
-      .filter((e) => !e.paidStatus && e.rowIndex !== undefined)
-      .map((e) => e.rowIndex as number);
-
-    if (unpaidIndices.length === 0) return;
-
-    try {
-      setIsLoading(true);
-      const res = await fetch("/api/expenses", {
-        method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-user-id": user.userId
-        },
-        body: JSON.stringify({ rowIndices: unpaidIndices, paid: true }),
-      });
-      const json = await res.json();
-      if (json.success) {
-        // Refresh data
-        await fetchExpenses();
-      } else {
-        throw new Error(json.error);
-      }
-    } catch (error) {
-      console.error("Failed to pay all:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Derived data
   const currentMonth = getCurrentMonth();
@@ -145,11 +55,22 @@ export default function DashboardPage() {
   const allMonths = getAllMonths(expenses);
   const thisMonthPaid = getPaidUnpaidSummary(expenses, currentMonth);
 
-  // Ensure selectedMonth is in the month list
-  const displayMonths =
-    allMonths.length > 0
-      ? allMonths
-      : [currentMonth, nextMonth];
+  // Available categories for the current selection
+  const availableCategories = Array.from(
+    new Set(selectedMonthExpenses.items.map((e) => e.category).filter(Boolean))
+  ) as string[];
+
+  const displayMonths = allMonths.length > 0 ? allMonths : [currentMonth, nextMonth];
+
+  const handlePayAll = async () => {
+    const unpaidIndices = selectedMonthExpenses.items
+      .filter((e) => !e.paidStatus && e.rowIndex !== undefined)
+      .map((e) => e.rowIndex as number);
+
+    if (unpaidIndices.length > 0) {
+      await payAll(unpaidIndices);
+    }
+  };
 
   if (isAuthLoading) {
     return (
@@ -162,23 +83,19 @@ export default function DashboardPage() {
     );
   }
 
+  const isLoading = isDataLoading && expenses.length === 0;
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar onAddClick={() => setIsAddModalOpen(true)} />
 
       <main className="flex-1">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          {/* Page Header */}
           <div className="mb-8 animate-fade-in-up">
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">
-              Dashboard Overview
-            </h2>
-            <p className="mt-1 text-slate-400">
-              สรุปภาพรวมรายจ่ายผ่อนชำระทั้งหมดของคุณ
-            </p>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">Dashboard Overview</h2>
+            <p className="mt-1 text-slate-400">สรุปภาพรวมรายจ่ายผ่อนชำระทั้งหมดของคุณ</p>
           </div>
 
-          {/* Summary Cards */}
           <div className="mb-8">
             <SummaryCards
               thisMonthTotal={thisMonthSummary.totalAmount}
@@ -189,61 +106,72 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Chart */}
           <div className="mb-8">
-            <ExpenseChart
-              data={chartData}
-              currentMonth={currentMonth}
-              isLoading={isLoading}
-            />
+            <ExpenseChart data={chartData} currentMonth={currentMonth} isLoading={isLoading} />
           </div>
 
-          {/* Monthly Expenses Table */}
           <div className="mb-8">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-4 animate-fade-in-up animation-delay-400">
               <div className="flex items-center gap-2">
                 {selectedMonthExpenses.items.some(e => !e.paidStatus) && (
                   <button
                     onClick={handlePayAll}
-                    disabled={isLoading}
+                    disabled={isDataLoading}
                     className="flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50"
                   >
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    {isDataLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                     ชำระทั้งหมด ({selectedMonthExpenses.items.filter(e => !e.paidStatus).length})
                   </button>
                 )}
+
+                <div className="flex items-center gap-2 ml-2">
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    className="rounded-lg bg-slate-900 border border-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 outline-none transition-all focus:border-violet-500/50 [color-scheme:dark]"
+                  >
+                    <option value="all" className="bg-slate-900 text-white">ทุกหมวดหมู่ ({selectedMonthExpenses.items.length})</option>
+                    {availableCategories.map(cat => (
+                      <option key={cat} value={cat} className="bg-slate-900 text-white">
+                        {cat} ({selectedMonthExpenses.items.filter(e => e.category === cat).length})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <MonthSelector
-                months={displayMonths}
-                selectedMonth={selectedMonth}
-                onChange={setSelectedMonth}
-              />
+              <MonthSelector months={displayMonths} selectedMonth={selectedMonth} onChange={setSelectedMonth} />
             </div>
+
             <ExpenseTable
-              expenses={selectedMonthExpenses.items}
+              expenses={[...selectedMonthExpenses.items]
+                .filter(e => filterCategory === "all" || e.category === filterCategory)
+                .sort((a, b) => {
+                  if (sortBy === "category") {
+                    return (a.category || "").localeCompare(b.category || "");
+                  }
+                  return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                })
+              }
               monthLabel={formatMonthThai(selectedMonth)}
               isLoading={isLoading}
-              onMarkPaid={handleMarkPaid}
+              onMarkPaid={markPaid}
             />
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/[0.06] py-6">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
           <p className="text-xs text-slate-600">
-            Installment Dashboard &copy; {new Date().getFullYear()} &middot;
-            Built with Next.js + Tailwind CSS
+            Installment Dashboard &copy; {new Date().getFullYear()} &middot; Built with Next.js + Tailwind CSS
           </p>
         </div>
       </footer>
 
-      {/* Add Expense Modal */}
       <AddExpenseModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSubmit={handleAddExpense}
+        onSubmit={addExpense}
       />
     </div>
   );

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2, Sparkles, CheckCircle2, Sheet, Plus } from "lucide-react";
 import { ExpenseFormData } from "@/types/expense";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useCallback } from "react";
+import { useSettings } from "@/hooks/useSettings";
 
 interface AddExpenseModalProps {
   isOpen: boolean;
@@ -18,6 +18,8 @@ export default function AddExpenseModal({
   onSubmit,
 }: AddExpenseModalProps) {
   const { user } = useAuth();
+  const { categories, fetchCategories, addCategory } = useSettings(user?.userId);
+  
   const [formData, setFormData] = useState<ExpenseFormData>({
     itemName: "",
     totalPrice: 0,
@@ -25,27 +27,12 @@ export default function AddExpenseModal({
     startMonth: new Date().toISOString().slice(0, 7), // "YYYY-MM"
     category: "",
   });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedItemName, setSavedItemName] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState("");
   const [isAddingCategory, setIsAddingCategory] = useState(false);
-
-  const fetchCategories = useCallback(async () => {
-    if (!user?.userId) return;
-    try {
-      const res = await fetch("/api/categories", {
-        headers: { "x-user-id": user.userId }
-      });
-      const json = await res.json();
-      if (json.success) {
-        setCategories(json.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-    }
-  }, [user?.userId]);
 
   useEffect(() => {
     if (isOpen && user?.userId) {
@@ -54,28 +41,14 @@ export default function AddExpenseModal({
   }, [isOpen, user?.userId, fetchCategories]);
 
   const handleAddCategory = async () => {
-    if (!newCategory.trim() || !user?.userId) return;
+    if (!newCategory.trim()) return;
     setIsAddingCategory(true);
-    try {
-      const res = await fetch("/api/categories", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "x-user-id": user.userId 
-        },
-        body: JSON.stringify({ categoryName: newCategory.trim() })
-      });
-      const json = await res.json();
-      if (json.success) {
-        await fetchCategories();
-        setFormData({ ...formData, category: newCategory.trim() });
-        setNewCategory("");
-      }
-    } catch (error) {
-      console.error("Failed to add category:", error);
-    } finally {
-      setIsAddingCategory(false);
+    const success = await addCategory(newCategory.trim());
+    if (success) {
+      setFormData({ ...formData, category: newCategory.trim() });
+      setNewCategory("");
     }
+    setIsAddingCategory(false);
   };
 
   const monthlyPayment =
@@ -120,15 +93,13 @@ export default function AddExpenseModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in"
-        onClick={handleClose}
-      />
-
+    <div className="fixed inset-0 z-[999] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm animate-fade-in" onClick={handleClose}>
       {/* Modal */}
-      <div className="relative w-full max-w-lg animate-scale-in rounded-2xl border border-white/[0.08] bg-slate-900/95 p-6 shadow-2xl backdrop-blur-xl">
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative my-auto w-full max-w-lg animate-scale-in rounded-3xl border border-white/[0.08] bg-slate-900/95 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl"
+        style={{ maxHeight: "calc(100vh - 40px)" }}
+      >
         {/* Close button */}
         <button
           id="close-modal-btn"
@@ -160,24 +131,6 @@ export default function AddExpenseModal({
               </p>
             </div>
 
-            {/* Sparkle particles */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute animate-sparkle"
-                  style={{
-                    left: `${20 + Math.random() * 60}%`,
-                    top: `${20 + Math.random() * 40}%`,
-                    animationDelay: `${i * 150}ms`,
-                    animationDuration: `${1 + Math.random() * 0.5}s`,
-                  }}
-                >
-                  <Sparkles className="h-3 w-3 text-yellow-400/60" />
-                </div>
-              ))}
-            </div>
-
             {/* Progress bar auto-close */}
             <div className="mt-6 w-48 h-1 rounded-full bg-white/10 overflow-hidden">
               <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 animate-progress-bar" />
@@ -187,49 +140,31 @@ export default function AddExpenseModal({
         ) : (
           /* ─── Form State ─── */
           <>
-            {/* Header */}
             <div className="mb-6">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-violet-400" />
                 <h2 className="text-xl font-bold text-white">เพิ่มรายการผ่อนใหม่</h2>
               </div>
-              <p className="mt-1 text-sm text-slate-400">
-                Add a new installment item
-              </p>
+              <p className="mt-1 text-sm text-slate-400">Add a new installment item</p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Item Name */}
               <div>
-                <label
-                  htmlFor="item-name"
-                  className="mb-1.5 block text-sm font-medium text-slate-300"
-                >
-                  ชื่อรายการ *
-                </label>
+                <label htmlFor="item-name" className="mb-1.5 block text-sm font-medium text-slate-300">ชื่อรายการ *</label>
                 <input
                   id="item-name"
                   type="text"
                   required
                   placeholder="เช่น MacBook Pro, iPhone..."
                   value={formData.itemName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, itemName: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                   className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20"
                 />
               </div>
 
-              {/* Total Price & Installments */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label
-                    htmlFor="total-price"
-                    className="mb-1.5 block text-sm font-medium text-slate-300"
-                  >
-                    ราคารวม (฿) *
-                  </label>
+                  <label htmlFor="total-price" className="mb-1.5 block text-sm font-medium text-slate-300">ราคารวม (฿) *</label>
                   <input
                     id="total-price"
                     type="number"
@@ -238,22 +173,12 @@ export default function AddExpenseModal({
                     step="0.01"
                     placeholder="0.00"
                     value={formData.totalPrice || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        totalPrice: parseFloat(e.target.value) || 0,
-                      })
-                    }
+                    onChange={(e) => setFormData({ ...formData, totalPrice: parseFloat(e.target.value) || 0 })}
                     className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20"
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="installments"
-                    className="mb-1.5 block text-sm font-medium text-slate-300"
-                  >
-                    จำนวนงวด *
-                  </label>
+                  <label htmlFor="installments" className="mb-1.5 block text-sm font-medium text-slate-300">จำนวนงวด *</label>
                   <input
                     id="installments"
                     type="number"
@@ -261,63 +186,40 @@ export default function AddExpenseModal({
                     min="1"
                     max="60"
                     value={formData.totalInstallments || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        totalInstallments: parseInt(e.target.value) || 0,
-                      })
-                    }
+                    onChange={(e) => setFormData({ ...formData, totalInstallments: parseInt(e.target.value) || 0 })}
                     className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white placeholder-slate-500 outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20"
                   />
                 </div>
               </div>
 
-              {/* Start Month & Category */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label
-                    htmlFor="start-month"
-                    className="mb-1.5 block text-sm font-medium text-slate-300"
-                  >
-                    เดือนเริ่มต้น *
-                  </label>
+                  <label htmlFor="start-month" className="mb-1.5 block text-sm font-medium text-slate-300">เดือนเริ่มต้น *</label>
                   <input
                     id="start-month"
                     type="month"
                     required
                     value={formData.startMonth}
-                    onChange={(e) =>
-                      setFormData({ ...formData, startMonth: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, startMonth: e.target.value })}
                     className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]"
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="category"
-                    className="mb-1.5 block text-sm font-medium text-slate-300"
-                  >
-                    หมวดหมู่
-                  </label>
+                  <label htmlFor="category" className="mb-1.5 block text-sm font-medium text-slate-300">หมวดหมู่</label>
                   <div className="flex gap-2">
                     <select
                       id="category"
                       value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-white outline-none transition-all focus:border-violet-500/50 focus:bg-white/[0.05] focus:ring-2 focus:ring-violet-500/20 [color-scheme:dark]"
                     >
                       <option value="" className="bg-slate-900">ไม่ระบุ</option>
                       {categories.map((cat) => (
-                        <option key={cat} value={cat} className="bg-slate-900">
-                          {cat}
-                        </option>
+                        <option key={cat} value={cat} className="bg-slate-900">{cat}</option>
                       ))}
                     </select>
                   </div>
                   
-                  {/* Quick Add Category */}
                   <div className="mt-2 flex gap-2">
                     <input
                       type="text"
@@ -338,7 +240,6 @@ export default function AddExpenseModal({
                 </div>
               </div>
 
-              {/* Monthly Payment Preview */}
               {formData.totalPrice > 0 && formData.totalInstallments > 0 && (
                 <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-4">
                   <div className="flex items-center justify-between">
@@ -360,12 +261,11 @@ export default function AddExpenseModal({
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 id="submit-expense-btn"
                 type="submit"
                 disabled={isSubmitting || !formData.itemName || !formData.totalPrice}
-                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-violet-500/25 disabled:hover:brightness-100"
+                className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">

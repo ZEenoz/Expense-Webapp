@@ -203,16 +203,23 @@ function MobileCard({
         <span className={`font-semibold ${expense.paidStatus ? "text-slate-400 line-through" : "text-white"}`}>
           {expense.itemName}
         </span>
-        <div className="flex items-center gap-2">
-          <span className={`text-lg font-bold ${expense.paidStatus ? "text-slate-500 line-through" : "text-white"}`}>
-            {formatCurrency(expense.monthlyPayment)}
-          </span>
-          <PayButton
-            expense={expense}
-            isPaying={isPaying}
-            showSuccess={showSuccess}
-            onMarkPaid={onMarkPaid}
-          />
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <span className={`text-lg font-bold ${expense.paidStatus ? "text-slate-500 line-through" : "text-white"}`}>
+              {formatCurrency(expense.monthlyPayment)}
+            </span>
+            <PayButton
+              expense={expense}
+              isPaying={isPaying}
+              showSuccess={showSuccess}
+              onMarkPaid={onMarkPaid}
+            />
+          </div>
+          {expense.category && (
+            <span className="text-[10px] text-slate-500 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
+              {expense.category}
+            </span>
+          )}
         </div>
       </div>
       <div className="flex items-center justify-between">

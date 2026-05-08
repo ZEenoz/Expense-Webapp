@@ -26,6 +26,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const initLiff = async () => {
+      // Mock mode for Localhost development
+      if (process.env.NEXT_PUBLIC_SKIP_LIFF === "true") {
+        console.log("🛠️ Running in Mock Auth Mode");
+        setUser({
+          userId: process.env.NEXT_PUBLIC_MOCK_USER_ID || "dev-user-mock",
+          displayName: "Developer (Mock)",
+          pictureUrl: "https://ui-avatars.com/api/?name=Dev+Mock&background=random",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "2009678810-bt80GDIl";
         

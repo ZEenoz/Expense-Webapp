@@ -407,3 +407,22 @@ export function createRecordSuccessFlex(itemName: string, totalPrice: number, in
     },
   };
 }
+
+/**
+ * Send a Push Message to a specific user
+ */
+export async function sendPushMessage(userId: string, messages: any | any[]) {
+  const client = getLineClient();
+  const messageArray = Array.isArray(messages) ? messages : [messages];
+  
+  try {
+    await client.pushMessage({
+      to: userId,
+      messages: messageArray,
+    });
+    console.log(`Successfully sent push message to ${userId}`);
+  } catch (error) {
+    console.error(`Failed to send push message to ${userId}:`, error);
+    throw error;
+  }
+}

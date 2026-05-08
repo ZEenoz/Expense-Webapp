@@ -115,6 +115,11 @@ export async function POST(request: Request) {
  */
 export async function PATCH(request: Request) {
   try {
+    const userId = request.headers.get("x-user-id");
+    if (!userId) {
+      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+    }
+
     const body = await request.json();
     const { rowIndex, rowIndices, paid } = body as { 
       rowIndex?: number; 
@@ -126,51 +131,30 @@ export async function PATCH(request: Request) {
 
     if (targetIndices.length === 0 || typeof paid !== "boolean") {
       return NextResponse.json(
-        { success: false, error: "Invalid request. Required: rowIndex or rowIndices, and paid" },
+        { success: false, error: "Invalid request. Missing rowIndex or paid status" },
         { status: 400 }
-      );
-    }
-
-    // Extract userId from headers
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
       );
     }
 
     // Security check: Verify all rows belong to the user
     const expenses = await getSheetData(userId);
     const userRowIndices = new Set(expenses.map(e => e.rowIndex));
-    
     const allBelongToUser = targetIndices.every(idx => userRowIndices.has(idx));
     
     if (!allBelongToUser) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized access to one or more records" },
-        { status: 403 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized access" }, { status: 403 });
     }
 
-    // Update each cell (in a real app, we might use a batch update API, but this works for small batches)
-    for (const idx of targetIndices) {
-      await updateCell(idx, "H", paid ? "paid" : "");
-    }
+    // Parallel Update for speed
+    const statusValue = paid ? "paid" : "";
+    await Promise.all(targetIndices.map(idx => updateCell(idx, "H", statusValue)));
 
     return NextResponse.json({
       success: true,
-      message: `Updated ${targetIndices.length} records successfully`,
+      message: `Updated ${targetIndices.length} records`,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("PATCH /api/expenses error:", error);
-
-    const message =
-      error instanceof Error ? error.message : "Failed to update payment status";
-
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

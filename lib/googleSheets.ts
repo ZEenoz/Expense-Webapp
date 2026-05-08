@@ -226,3 +226,83 @@ export async function addCategory(userId: string, categoryName: string): Promise
     },
   });
 }
+
+/**
+ * User Config Management
+ * Sheet: 'User_Configs' (Columns: UserId, ReminderDay, IsNotifyEnabled)
+ */
+
+export interface UserConfig {
+  userId: string;
+  reminderDay: number;
+  isNotifyEnabled: boolean;
+}
+
+export async function getUserConfig(userId: string): Promise<UserConfig | null> {
+  const sheets = getSheetsClient();
+  const { spreadsheetId } = getSheetConfig();
+  const configSheetName = "User_Configs";
+
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${configSheetName}!A:C`,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) return null;
+
+    const userRow = rows.slice(1).find(row => row[0] === userId);
+    if (!userRow) return null;
+
+    return {
+      userId: userRow[0],
+      reminderDay: parseInt(userRow[1], 10) || 1,
+      isNotifyEnabled: String(userRow[2]).toLowerCase() === "true",
+    };
+  } catch (error) {
+    console.warn("User_Configs sheet might not exist yet:", error);
+    return null;
+  }
+}
+
+export async function saveUserConfig(config: UserConfig): Promise<void> {
+  const sheets = getSheetsClient();
+  const { spreadsheetId } = getSheetConfig();
+  const configSheetName = "User_Configs";
+
+  // Check if user already has a config
+  const existingConfig = await getUserConfig(config.userId);
+
+  if (existingConfig) {
+    // Find the row index to update
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${configSheetName}!A:A`,
+    });
+    const rows = response.data.values || [];
+    const rowIndex = rows.findIndex(row => row[0] === config.userId);
+
+    if (rowIndex !== -1) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${configSheetName}!B${rowIndex + 1}:C${rowIndex + 1}`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+          values: [[config.reminderDay, config.isNotifyEnabled]],
+        },
+      });
+      return;
+    }
+  }
+
+  // If not found, append new row
+  await sheets.spreadsheets.values.append({
+    spreadsheetId,
+    range: `${configSheetName}!A:C`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[config.userId, config.reminderDay, config.isNotifyEnabled]],
+    },
+  });
+}
