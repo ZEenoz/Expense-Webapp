@@ -1,4 +1,5 @@
 import { google } from "googleapis";
+import { Expense } from "@/types/expense";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
@@ -47,16 +48,17 @@ function getSheetConfig() {
 }
 
 /**
- * Fetch all rows from the Google Sheet (A through H, including Paid_Status)
+ * Fetch all rows from the Google Sheet (A through I, including UserId)
  * Returns raw 2D array of string values
+ * @param userId - Optional ID to filter results
  */
-export async function getSheetData(): Promise<string[][]> {
+export async function getSheetData(userId?: string): Promise<Expense[]> {
   const sheets = getSheetsClient();
   const { spreadsheetId, sheetName } = getSheetConfig();
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A:H`, // Columns A through H (includes Paid_Status)
+    range: `${sheetName}!A:I`, // Columns A through I (includes UserId)
   });
 
   const rows = response.data.values;
@@ -64,24 +66,44 @@ export async function getSheetData(): Promise<string[][]> {
     return [];
   }
 
-  // Skip header row (index 0) and return data rows
-  return rows.slice(1);
+  const dataRows = rows.slice(1); // Skip header
+
+  // We map first to include the absolute rowIndex, then filter by userId
+  const expenses = dataRows
+    .map((row, idx) => parseSheetRow(row, idx))
+    .filter((e): e is NonNullable<typeof e> => e !== null);
+
+  if (!userId) {
+    return expenses;
+  }
+
+  return expenses.filter(e => e.userId === userId);
 }
 
 /**
  * Append rows to the Google Sheet
  * @param rows - Array of row arrays to append
+ * @param userId - ID of the user owning these rows
  */
-export async function appendRows(rows: string[][]): Promise<number> {
+export async function appendRows(rows: string[][], userId: string): Promise<number> {
   const sheets = getSheetsClient();
   const { spreadsheetId, sheetName } = getSheetConfig();
 
+  // Add userId to each row (Column I)
+  const rowsWithUser = rows.map(row => {
+    const newRow = [...row];
+    // Ensure the row has exactly 9 elements (A-I)
+    while (newRow.length < 8) newRow.push(""); 
+    newRow[8] = userId;
+    return newRow;
+  });
+
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: `${sheetName}!A:H`,
+    range: `${sheetName}!A:I`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: rows,
+      values: rowsWithUser,
     },
   });
 
@@ -118,7 +140,7 @@ export async function updateCell(
 
 /**
  * Parse a raw sheet row into a structured object
- * Row format: [Timestamp, Item_Name, Total_Price, Installment_Status, Monthly_Payment, Due_Month, Category, Paid_Status]
+ * Row format: [Timestamp, Item_Name, Total_Price, Installment_Status, Monthly_Payment, Due_Month, Category, Paid_Status, UserId]
  */
 export function parseSheetRow(
   row: string[],
@@ -133,6 +155,7 @@ export function parseSheetRow(
   dueMonth: string;
   category: string;
   paidStatus: boolean;
+  userId: string;
   rowIndex: number;
 } | null {
   // Skip empty rows
@@ -151,6 +174,7 @@ export function parseSheetRow(
     dueMonth: row[5] || "",
     category: row[6] || "",
     paidStatus: paidValue === "paid" || paidValue === "true" || paidValue === "yes",
+    userId: row[8] || "",
     rowIndex: index,
   };
 }

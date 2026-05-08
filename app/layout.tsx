@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   keywords: ["expense tracker", "installment", "dashboard", "finance"],
 };
 
+import { AuthProvider } from "@/context/AuthContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-mesh">{children}</body>
+      <body className="min-h-full flex flex-col bg-mesh">
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

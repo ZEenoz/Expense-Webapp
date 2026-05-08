@@ -18,8 +18,10 @@ import {
   getPaidUnpaidSummary,
 } from "@/lib/utils";
 import { Expense, ExpenseFormData } from "@/types/expense";
+import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardPage() {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -27,8 +29,14 @@ export default function DashboardPage() {
 
   // Fetch expenses from API
   const fetchExpenses = useCallback(async () => {
+    if (!user?.userId) return;
+    
     try {
-      const res = await fetch("/api/expenses");
+      const res = await fetch("/api/expenses", {
+        headers: {
+          "x-user-id": user.userId
+        }
+      });
       const json = await res.json();
       if (json.success) {
         setExpenses(json.data);
@@ -38,17 +46,24 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user?.userId]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    if (user?.userId) {
+      fetchExpenses();
+    }
+  }, [fetchExpenses, user?.userId]);
 
   // Handle adding a new expense
   const handleAddExpense = async (formData: ExpenseFormData) => {
+    if (!user?.userId) return;
+
     const res = await fetch("/api/expenses", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "x-user-id": user.userId
+      },
       body: JSON.stringify(formData),
     });
     const json = await res.json();
@@ -61,9 +76,14 @@ export default function DashboardPage() {
 
   // Handle marking an installment as paid/unpaid
   const handleMarkPaid = async (rowIndex: number, paid: boolean) => {
+    if (!user?.userId) return;
+
     const res = await fetch("/api/expenses", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "x-user-id": user.userId
+      },
       body: JSON.stringify({ rowIndex, paid }),
     });
     const json = await res.json();
@@ -95,6 +115,17 @@ export default function DashboardPage() {
     allMonths.length > 0
       ? allMonths
       : [currentMonth, nextMonth];
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto"></div>
+          <p className="text-slate-400 animate-pulse">กำลังยืนยันตัวตนผ่าน LINE...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col">

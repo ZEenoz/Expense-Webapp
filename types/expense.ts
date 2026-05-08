@@ -8,6 +8,7 @@ export interface Expense {
   dueMonth: string; // "YYYY-MM"
   category: string;
   paidStatus: boolean; // true = paid, false = unpaid
+  userId: string;
   rowIndex?: number; // Sheet row index for updates
 }
 

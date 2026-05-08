@@ -39,16 +39,16 @@ export async function POST(request: Request) {
 
   for (const event of events) {
     try {
+      const userId = event.source.userId;
+      if (!userId) continue;
+
       // ─── Text Message Handling ───
       if (event.type === "message" && event.message.type === "text") {
         const text = event.message.text.trim();
 
         // A. Command: "ชำระเสร็จสิ้น"
         if (text === "ชำระเสร็จสิ้น") {
-          const rawRows = await getSheetData();
-          const expenses = rawRows
-            .map((row, idx) => parseSheetRow(row, idx))
-            .filter((e): e is NonNullable<typeof e> => e !== null);
+          const expenses = await getSheetData(userId);
 
           const flexMessage = createUnpaidExpensesFlex(expenses);
           await client.replyMessage({
@@ -60,10 +60,7 @@ export async function POST(request: Request) {
 
         // B. Command: "สรุป"
         if (text === "สรุป" || text === "สรุปรายเดือน") {
-          const rawRows = await getSheetData();
-          const expenses = rawRows
-            .map((row, idx) => parseSheetRow(row, idx))
-            .filter((e): e is NonNullable<typeof e> => e !== null);
+          const expenses = await getSheetData(userId);
 
           const flexMessage = createMonthlySummaryFlex(expenses);
           await client.replyMessage({
@@ -107,7 +104,7 @@ export async function POST(request: Request) {
             currentDueMonth = getNextMonth(currentDueMonth);
           }
 
-          await appendRows(rowsToAppend);
+          await appendRows(rowsToAppend, userId);
           
           const flexMessage = createRecordSuccessFlex(itemName, totalPrice, totalInstallments);
           await client.replyMessage({
@@ -127,6 +124,16 @@ export async function POST(request: Request) {
 
         if (action === "mark_paid" && rowIndexStr) {
           const rowIndex = parseInt(rowIndexStr, 10);
+          
+          // Security check: Verify the row belongs to the user before updating
+          const expenses = await getSheetData(userId);
+          const belongsToUser = expenses.some(e => e.rowIndex === rowIndex);
+          
+          if (!belongsToUser) {
+            console.warn(`User ${userId} tried to update row ${rowIndex} which doesn't belong to them.`);
+            continue;
+          }
+
           await updateCell(rowIndex, "H", "paid");
 
           await client.replyMessage({

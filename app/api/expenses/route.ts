@@ -9,13 +9,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
 
-    // Fetch from Google Sheets
-    const rawRows = await getSheetData();
+    // Extract userId from headers (will be sent by LIFF later)
+    const userId = request.headers.get("x-user-id");
 
-    // Parse rows into Expense objects (pass index for row tracking)
-    let expenses: Expense[] = rawRows
-      .map((row, index) => parseSheetRow(row, index))
-      .filter((e): e is NonNullable<typeof e> => e !== null);
+    // Fetch from Google Sheets
+    let expenses = await getSheetData(userId || undefined);
 
     // Optional month filter
     if (month) {
@@ -81,8 +79,17 @@ export async function POST(request: Request) {
       ]);
     }
 
+    // Extract userId from headers
+    const userId = request.headers.get("x-user-id");
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     // Append to Google Sheets
-    const updatedRows = await appendRows(rows);
+    const updatedRows = await appendRows(rows, userId);
 
     return NextResponse.json({
       success: true,
@@ -115,6 +122,26 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         { success: false, error: "Invalid request. Required: rowIndex (number), paid (boolean)" },
         { status: 400 }
+      );
+    }
+
+    // Extract userId from headers
+    const userId = request.headers.get("x-user-id");
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // Security check: Verify the row belongs to the user
+    const expenses = await getSheetData(userId);
+    const belongsToUser = expenses.some(e => e.rowIndex === rowIndex);
+    
+    if (!belongsToUser) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized access to this record" },
+        { status: 403 }
       );
     }
 
