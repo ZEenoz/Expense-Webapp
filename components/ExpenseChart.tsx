@@ -102,11 +102,12 @@ export default function ExpenseChart({
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: "#94a3b8", fontSize: 12 }}
+              width={52}
+              tick={{ fill: "#94a3b8", fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(value) =>
-                value >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(value)
+                value >= 1000 ? `${(value / 1000).toFixed(0)}k` : String(value)
               }
             />
             <Tooltip

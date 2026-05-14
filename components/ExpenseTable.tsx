@@ -143,7 +143,7 @@ export default function ExpenseTable({
               {/* Paid divider */}
               {paid.length > 0 && unpaid.length > 0 && (
                 <tr>
-                  <td colSpan={6} className="py-2">
+                  <td colSpan={7} className="py-2">
                     <div className="flex items-center gap-2">
                       <div className="h-px flex-1 bg-emerald-500/20" />
                       <span className="text-xs font-medium text-emerald-400/60">จ่ายแล้ว ({paid.length})</span>
@@ -165,9 +165,9 @@ export default function ExpenseTable({
             </tbody>
             <tfoot>
               <tr className="border-t border-white/[0.08]">
-                <td colSpan={3} className="pt-4 text-sm font-semibold text-slate-400">รวมทั้งหมด</td>
+                <td colSpan={4} className="pt-4 text-sm font-semibold text-slate-400">รวมทั้งหมด</td>
                 <td className="pt-4 text-right text-lg font-bold text-white">{formatCurrency(totalAmount)}</td>
-                <td />
+                <td className="hidden lg:table-cell" />
                 <td />
               </tr>
             </tfoot>
@@ -365,7 +365,7 @@ function PayButton({
 
   if (showSuccess) {
     return (
-      <div className="flex h-8 items-center justify-center gap-1 rounded-lg bg-emerald-500/20 px-3 animate-success-bounce">
+      <div className="flex h-9 items-center justify-center gap-1 rounded-xl bg-emerald-500/20 px-3 animate-success-bounce">
         <Check className="h-3.5 w-3.5 text-emerald-400" />
         <span className="text-xs font-semibold text-emerald-400">Paid!</span>
       </div>
@@ -377,7 +377,7 @@ function PayButton({
       <button
         onClick={() => onMarkPaid(expense.rowIndex!, false)}
         disabled={isPaying}
-        className="flex h-8 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 group/btn disabled:opacity-50"
+        className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 group/btn disabled:opacity-50 active:scale-95"
         title="ยกเลิกการจ่าย"
       >
         {isPaying ? (
@@ -398,7 +398,7 @@ function PayButton({
     <button
       onClick={() => onMarkPaid(expense.rowIndex!, true)}
       disabled={isPaying}
-      className="flex h-8 items-center gap-1 rounded-lg bg-gradient-to-r from-emerald-600 to-green-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50"
+      className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50"
     >
       {isPaying ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

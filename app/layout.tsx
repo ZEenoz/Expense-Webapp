@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 export default function RootLayout({
   children,
@@ -28,7 +29,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-mesh">
         <AuthProvider>
           <ToastProvider>
-            {children}
+            <LayoutWrapper>
+              {children}
+            </LayoutWrapper>
           </ToastProvider>
         </AuthProvider>
       </body>

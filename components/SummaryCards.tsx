@@ -69,7 +69,7 @@ export default function SummaryCards({
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -93,7 +93,7 @@ export default function SummaryCards({
                     {card.value}
                   </p>
                 )}
-                <p className="text-xs text-slate-500">{card.subtitle}</p>
+                <p className="text-xs text-slate-500 truncate max-w-[180px]">{card.subtitle}</p>
               </div>
               <div
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.iconBg} shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}
