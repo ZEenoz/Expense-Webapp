@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus, Wallet, ArrowUpDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTransactions } from "@/hooks/useTransactions";
-import { Transaction, TransactionFilters, TransactionFormData } from "@/types/transaction";
+import type { Transaction, TransactionFilters, TransactionFormData } from "@/types/transaction";
 import {
   getTransactionSummary,
   getUniqueCategories,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, X, SlidersHorizontal } from "lucide-react";
-import { TransactionFilters } from "@/types/transaction";
+import type { TransactionFilters } from "@/types/transaction";
 import { useState } from "react";
 
 interface TransactionFiltersProps {
