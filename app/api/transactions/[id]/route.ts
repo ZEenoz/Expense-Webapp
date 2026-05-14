@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { TransactionFormData } from "@/types/transaction";
 
@@ -43,9 +43,10 @@ function getSheetConfig() {
  * PUT - Update a transaction
  */
 export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const userId = request.headers.get("x-user-id");
     if (!userId) {
@@ -55,7 +56,7 @@ export async function PUT(
       );
     }
 
-    const rowIndex = parseInt(params.id);
+    const rowIndex = parseInt(id);
     if (isNaN(rowIndex)) {
       return NextResponse.json(
         { success: false, error: "Invalid transaction ID" },
