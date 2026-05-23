@@ -76,6 +76,22 @@ export function useExpenses(userId: string | undefined) {
     }
   }, [userId, fetchExpenses, showToast]);
 
+  const deleteExpense = useCallback(async (rowIndex: number) => {
+    if (!userId) return false;
+    const res = await apiClient(`/api/expenses?rowIndex=${rowIndex}`, {
+      method: "DELETE",
+    }, userId);
+    
+    if (res.success) {
+      await fetchExpenses();
+      showToast("ลบรายการเรียบร้อย", "success");
+      return true;
+    } else {
+      showToast(res.error || "ไม่สามารถลบรายการได้", "error");
+      return false;
+    }
+  }, [userId, fetchExpenses, showToast]);
+
   return {
     expenses,
     isLoading,
@@ -84,5 +100,6 @@ export function useExpenses(userId: string | undefined) {
     markPaid,
     payAll,
     addExpense,
+    deleteExpense,
   };
 }

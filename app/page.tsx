@@ -31,6 +31,7 @@ export default function InstallmentsPage() {
     markPaid,
     payAll,
     addExpense,
+    deleteExpense,
   } = useExpenses(user?.userId);
 
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
@@ -180,6 +181,7 @@ export default function InstallmentsPage() {
               monthLabel={formatMonthThai(selectedMonth)}
               isLoading={isLoading}
               onMarkPaid={markPaid}
+              onDelete={deleteExpense}
             />
           </div>
         </div>

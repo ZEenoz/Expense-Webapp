@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import {
   Settings, Bell, BellOff, User, Tag, Info,
   Calendar, Save, Loader2, Plus, X, LogOut,
-  ExternalLink, ChevronRight, Check,
+  ExternalLink, ChevronRight, Check, Shield
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
+import { useToast } from "@/context/ToastContext";
 
 // ─── Section wrapper ─────────────────────────────────────────
 function Section({
@@ -64,7 +65,7 @@ function ToggleRow({
 
 // ─── Main Page ───────────────────────────────────────────────
 export default function SettingsPage() {
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
+  const { user, isAdmin, logout, isLoading: isAuthLoading } = useAuth();
   const {
     categories, userConfig,
     isLoading: isSettingsLoading,
@@ -73,9 +74,11 @@ export default function SettingsPage() {
 
   // ── Notification state ──
   const [isNotifyEnabled, setIsNotifyEnabled] = useState(false);
-  const [reminderDay, setReminderDay] = useState(1);
+  const [reminderDays, setReminderDays] = useState<number[]>([1]);
   const [isSaving, setIsSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
+  const [isTestingNotify, setIsTestingNotify] = useState(false);
+  const { showToast } = useToast();
 
   // ── Category state ──
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -91,18 +94,45 @@ export default function SettingsPage() {
   useEffect(() => {
     if (userConfig) {
       setIsNotifyEnabled(userConfig.isNotifyEnabled);
-      setReminderDay(userConfig.reminderDay);
+      setReminderDays(userConfig.reminderDays || [1]);
     }
   }, [userConfig]);
 
   const handleSaveNotification = async () => {
     setIsSaving(true);
-    const ok = await saveConfig({ reminderDay, isNotifyEnabled });
+    const ok = await saveConfig({ reminderDays, isNotifyEnabled });
     if (ok) {
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2000);
     }
     setIsSaving(false);
+  };
+
+  const toggleDay = (day: number) => {
+    setReminderDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day) 
+        : [...prev, day].sort((a,b) => a-b)
+    );
+  };
+
+  const handleTestNotify = async () => {
+    setIsTestingNotify(true);
+    try {
+      const res = await fetch("/api/notify/test", {
+        method: "POST",
+        headers: { "x-user-id": user?.userId || "" }
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast("ส่งข้อความทดสอบสำเร็จ เช็ค LINE ได้เลยครับ", "success");
+      } else {
+        showToast(`ส่งข้อความไม่สำเร็จ: ${data.error}`, "error");
+      }
+    } catch (err: any) {
+      showToast(`เกิดข้อผิดพลาด: ${err.message}`, "error");
+    }
+    setIsTestingNotify(false);
   };
 
   const handleAddCategory = async () => {
@@ -228,27 +258,27 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
                           <Calendar className="h-4 w-4 text-violet-400" />
-                          วันที่แจ้งเตือนทุกเดือน
+                          วันที่แจ้งเตือนทุกเดือน (เลือกได้หลายวัน)
                         </label>
-                        <span className="text-xs font-bold text-violet-400 bg-violet-400/10 px-2.5 py-1 rounded-full">
-                          วันที่ {reminderDay}
-                        </span>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        {[1, 5, 10, 15, 20, 25, 28].map((day) => (
-                          <button
-                            key={day}
-                            onClick={() => setReminderDay(day)}
-                            className={`flex h-11 min-w-[44px] flex-1 items-center justify-center rounded-xl border text-sm font-semibold transition-all ${
-                              reminderDay === day
-                                ? "border-violet-500 bg-violet-500/20 text-white shadow-lg shadow-violet-500/10"
-                                : "border-white/[0.08] bg-white/[0.03] text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 active:bg-white/10"
-                            }`}
-                          >
-                            {day}
-                          </button>
-                        ))}
+                        {[1, 2, 3, 4, 5, 10, 15, 20, 25, 28].map((day) => {
+                          const isSelected = reminderDays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              onClick={() => toggleDay(day)}
+                              className={`flex h-11 min-w-[44px] flex-1 items-center justify-center rounded-xl border text-sm font-semibold transition-all ${
+                                isSelected
+                                  ? "border-violet-500 bg-violet-500/20 text-white shadow-lg shadow-violet-500/10"
+                                  : "border-white/[0.08] bg-white/[0.03] text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 active:bg-white/10"
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
                       </div>
 
                       <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3">
@@ -277,6 +307,30 @@ export default function SettingsPage() {
                       <><Save className="h-4 w-4" /> บันทึกการตั้งค่า</>
                     )}
                   </button>
+
+                  {isAdmin && (
+                    <div className="mt-6 animate-fade-in-up">
+                      <div className="h-px bg-white/[0.06] mb-6" />
+                      <div className="rounded-xl bg-violet-500/10 border border-violet-500/20 p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-bold text-violet-400 flex items-center gap-2">
+                              <Shield className="h-4 w-4" /> เมนูสำหรับผู้ดูแลระบบ (Admin)
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">ทดสอบระบบแจ้งเตือน (ระบบจะส่งข้อความเข้า LINE ของคุณทันที)</p>
+                          </div>
+                          <button
+                            onClick={handleTestNotify}
+                            disabled={isTestingNotify}
+                            className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-500/20 px-4 py-2.5 text-sm font-semibold text-violet-400 hover:bg-violet-500/30 transition-all disabled:opacity-50"
+                          >
+                            {isTestingNotify ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+                            ทดสอบแจ้งเตือน
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </Section>

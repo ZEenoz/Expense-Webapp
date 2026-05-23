@@ -158,3 +158,90 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const userId = request.headers.get("x-user-id");
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const rowIndex = searchParams.get("rowIndex");
+
+    if (!rowIndex) {
+      return NextResponse.json(
+        { success: false, error: "Missing rowIndex" },
+        { status: 400 }
+      );
+    }
+
+    const { getSheetsClient, getSheetConfig } = await import("@/lib/googleSheets");
+    const sheets = getSheetsClient();
+    const { spreadsheetId, sheetName } = getSheetConfig();
+
+    // Verify ownership
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:I`,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Expense not found" },
+        { status: 404 }
+      );
+    }
+
+    const targetRow = rows[parseInt(rowIndex) + 1]; // +1 for header
+    if (!targetRow || targetRow[8] !== userId) { // UserId is in column I (index 8)
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
+    // Get sheet ID
+    const sheetMetadata = await sheets.spreadsheets.get({ spreadsheetId });
+    const sheet = sheetMetadata.data.sheets?.find(
+      s => s.properties?.title === sheetName
+    );
+    const sheetId = sheet?.properties?.sheetId;
+
+    if (sheetId === undefined) {
+      throw new Error("Sheet not found");
+    }
+
+    // Delete row
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: "ROWS",
+                startIndex: parseInt(rowIndex) + 1, // +1 for header
+                endIndex: parseInt(rowIndex) + 2,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Expense deleted successfully",
+    });
+  } catch (error) {
+    console.error("DELETE /api/expenses error:", error);
+    const message = error instanceof Error ? error.message : "Failed to delete expense";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}

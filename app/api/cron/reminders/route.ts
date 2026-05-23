@@ -30,10 +30,10 @@ export async function GET(request: Request) {
       if (!row || row.length < 3) return false; // ข้ามแถวที่ข้อมูลไม่ครบ
       
       const userId = row[0];
-      const setDay = parseInt(row[1], 10);
+      const setDays = String(row[1]).split(",").map(d => parseInt(d.trim(), 10));
       const isEnabled = String(row[2]).toLowerCase() === "true"; // เช็คได้ทั้ง TRUE, true, True
       
-      return userId && setDay === today && isEnabled;
+      return userId && setDays.includes(today) && isEnabled;
     });
 
     let sentCount = 0;

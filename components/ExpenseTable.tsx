@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { Expense } from "@/types/expense";
 import { formatCurrency } from "@/lib/utils";
-import { CreditCard, Check, Loader2, Undo2 } from "lucide-react";
+import { CreditCard, Check, Loader2, Undo2, Trash2 } from "lucide-react";
 
 interface ExpenseTableProps {
   expenses: Expense[];
   monthLabel: string;
   isLoading: boolean;
   onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void>;
+  onDelete?: (rowIndex: number) => Promise<boolean | void>;
 }
 
 export default function ExpenseTable({
@@ -17,6 +18,7 @@ export default function ExpenseTable({
   monthLabel,
   isLoading,
   onMarkPaid,
+  onDelete,
 }: ExpenseTableProps) {
   const [payingRowIndex, setPayingRowIndex] = useState<number | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState<number | null>(null);
@@ -93,6 +95,7 @@ export default function ExpenseTable({
                 isPaying={payingRowIndex === expense.rowIndex}
                 showSuccess={showPaymentSuccess === expense.rowIndex}
                 onMarkPaid={handleMarkPaid}
+                onDelete={onDelete}
               />
             ))}
             {/* Paid items */}
@@ -110,6 +113,7 @@ export default function ExpenseTable({
                     isPaying={payingRowIndex === expense.rowIndex}
                     showSuccess={false}
                     onMarkPaid={handleMarkPaid}
+                    onDelete={onDelete}
                   />
                 ))}
               </>
@@ -138,6 +142,7 @@ export default function ExpenseTable({
                   isPaying={payingRowIndex === expense.rowIndex}
                   showSuccess={showPaymentSuccess === expense.rowIndex}
                   onMarkPaid={handleMarkPaid}
+                  onDelete={onDelete}
                 />
               ))}
               {/* Paid divider */}
@@ -160,6 +165,7 @@ export default function ExpenseTable({
                   isPaying={payingRowIndex === expense.rowIndex}
                   showSuccess={false}
                   onMarkPaid={handleMarkPaid}
+                  onDelete={onDelete}
                 />
               ))}
             </tbody>
@@ -184,11 +190,13 @@ function MobileCard({
   isPaying,
   showSuccess,
   onMarkPaid,
+  onDelete,
 }: {
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
   onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
+  onDelete?: (rowIndex: number) => Promise<boolean | void> | void;
 }) {
   return (
     <div
@@ -247,6 +255,7 @@ function MobileCard({
           isPaying={isPaying}
           showSuccess={showSuccess}
           onMarkPaid={onMarkPaid}
+          onDelete={onDelete}
         />
       </div>
     </div>
@@ -259,11 +268,13 @@ function DesktopRow({
   isPaying,
   showSuccess,
   onMarkPaid,
+  onDelete,
 }: {
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
   onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
+  onDelete?: (rowIndex: number) => Promise<boolean | void> | void;
 }) {
   const progress = (expense.currentInstallment / expense.totalInstallments) * 100;
 
@@ -343,6 +354,7 @@ function DesktopRow({
           isPaying={isPaying}
           showSuccess={showSuccess}
           onMarkPaid={onMarkPaid}
+          onDelete={onDelete}
         />
       </td>
     </tr>
@@ -355,59 +367,89 @@ function PayButton({
   isPaying,
   showSuccess,
   onMarkPaid,
+  onDelete,
 }: {
   expense: Expense;
   isPaying: boolean;
   showSuccess: boolean;
   onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
+  onDelete?: (rowIndex: number) => Promise<boolean | void> | void;
 }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  const handleDelete = async () => {
+    if (window.confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) {
+      setIsDeleting(true);
+      await onDelete?.(expense.rowIndex!);
+      setIsDeleting(false);
+    }
+  };
+
   if (typeof expense.rowIndex !== "number") return null;
 
-  if (showSuccess) {
-    return (
-      <div className="flex h-9 items-center justify-center gap-1 rounded-xl bg-emerald-500/20 px-3 animate-success-bounce">
-        <Check className="h-3.5 w-3.5 text-emerald-400" />
-        <span className="text-xs font-semibold text-emerald-400">Paid!</span>
-      </div>
-    );
-  }
+  const renderPayAction = () => {
+    if (showSuccess) {
+      return (
+        <div className="flex h-9 items-center justify-center gap-1 rounded-xl bg-emerald-500/20 px-3 animate-success-bounce">
+          <Check className="h-3.5 w-3.5 text-emerald-400" />
+          <span className="text-xs font-semibold text-emerald-400">Paid!</span>
+        </div>
+      );
+    }
 
-  if (expense.paidStatus) {
+    if (expense.paidStatus) {
+      return (
+        <button
+          onClick={() => onMarkPaid(expense.rowIndex!, false)}
+          disabled={isPaying || isDeleting}
+          className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 group/btn disabled:opacity-50 active:scale-95"
+          title="ยกเลิกการจ่าย"
+        >
+          {isPaying ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <>
+              <Check className="h-3.5 w-3.5 group-hover/btn:hidden" />
+              <Undo2 className="h-3.5 w-3.5 hidden group-hover/btn:block" />
+              <span className="group-hover/btn:hidden">จ่ายแล้ว</span>
+              <span className="hidden group-hover/btn:inline">ยกเลิก</span>
+            </>
+          )}
+        </button>
+      );
+    }
+
     return (
       <button
-        onClick={() => onMarkPaid(expense.rowIndex!, false)}
-        disabled={isPaying}
-        className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 group/btn disabled:opacity-50 active:scale-95"
-        title="ยกเลิกการจ่าย"
+        onClick={() => onMarkPaid(expense.rowIndex!, true)}
+        disabled={isPaying || isDeleting}
+        className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50"
       >
         {isPaying ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
           <>
-            <Check className="h-3.5 w-3.5 group-hover/btn:hidden" />
-            <Undo2 className="h-3.5 w-3.5 hidden group-hover/btn:block" />
-            <span className="group-hover/btn:hidden">จ่ายแล้ว</span>
-            <span className="hidden group-hover/btn:inline">ยกเลิก</span>
+            <Check className="h-3.5 w-3.5" />
+            <span>จ่ายแล้ว</span>
           </>
         )}
       </button>
     );
-  }
+  };
 
   return (
-    <button
-      onClick={() => onMarkPaid(expense.rowIndex!, true)}
-      disabled={isPaying}
-      className="flex h-9 min-w-[80px] items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50"
-    >
-      {isPaying ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <>
-          <Check className="h-3.5 w-3.5" />
-          <span>จ่ายแล้ว</span>
-        </>
+    <div className="flex items-center justify-end gap-2">
+      {renderPayAction()}
+      {onDelete && (
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting || isPaying}
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 active:scale-95 disabled:opacity-50"
+          title="ลบรายการ"
+        >
+          {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+        </button>
       )}
-    </button>
+    </div>
   );
 }

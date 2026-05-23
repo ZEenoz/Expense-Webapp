@@ -14,6 +14,7 @@ interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
   error: string | null;
+  isAdmin: boolean;
   logout: () => void;
 }
 
@@ -23,6 +24,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (user?.userId) {
+      const adminIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(",") || [];
+      setIsAdmin(adminIds.includes(user.userId));
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const initLiff = async () => {
@@ -69,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, error, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, error, isAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
         success: true, 
         data: { 
           userId, 
-          reminderDay: 1, 
+          reminderDays: [1], 
           isNotifyEnabled: false 
         } 
       });
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const config: UserConfig = {
       userId,
-      reminderDay: parseInt(body.reminderDay, 10) || 1,
+      reminderDays: Array.isArray(body.reminderDays) ? body.reminderDays : [1],
       isNotifyEnabled: body.isNotifyEnabled === true,
     };
 

@@ -234,7 +234,7 @@ export async function addCategory(userId: string, categoryName: string): Promise
 
 export interface UserConfig {
   userId: string;
-  reminderDay: number;
+  reminderDays: number[];
   isNotifyEnabled: boolean;
 }
 
@@ -257,7 +257,7 @@ export async function getUserConfig(userId: string): Promise<UserConfig | null> 
 
     return {
       userId: userRow[0],
-      reminderDay: parseInt(userRow[1], 10) || 1,
+      reminderDays: String(userRow[1]).split(",").map(d => parseInt(d.trim(), 10)).filter(n => !isNaN(n)),
       isNotifyEnabled: String(userRow[2]).toLowerCase() === "true",
     };
   } catch (error) {
@@ -289,7 +289,7 @@ export async function saveUserConfig(config: UserConfig): Promise<void> {
         range: `${configSheetName}!B${rowIndex + 1}:C${rowIndex + 1}`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
-          values: [[config.reminderDay, config.isNotifyEnabled]],
+          values: [[config.reminderDays.join(","), config.isNotifyEnabled]],
         },
       });
       return;
@@ -302,7 +302,7 @@ export async function saveUserConfig(config: UserConfig): Promise<void> {
     range: `${configSheetName}!A:C`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
-      values: [[config.userId, config.reminderDay, config.isNotifyEnabled]],
+      values: [[config.userId, config.reminderDays.join(","), config.isNotifyEnabled]],
     },
   });
 }
