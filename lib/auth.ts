@@ -14,32 +14,26 @@ export async function verifyLineToken(request: Request): Promise<{ userId: strin
     return { userId: null, error: "Missing or invalid Authorization header" };
   }
 
-  const idToken = authHeader.split(" ")[1];
-  const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "2009678810-bt80GDIl";
-  // LINE token verify endpoint requires the Channel ID (client_id), not the full LIFF ID
-  const channelId = liffId.split("-")[0];
+  const token = authHeader.split(" ")[1];
 
   try {
-    const params = new URLSearchParams();
-    params.append('id_token', idToken);
-    params.append('client_id', channelId);
-
-    const response = await fetch("https://api.line.me/oauth2/v2.1/verify", {
-      method: "POST",
+    // We use /v2/profile with Access Token instead of /oauth2/v2.1/verify with ID Token
+    // because it doesn't require the openid scope to be enabled and doesn't depend on client_id.
+    const response = await fetch("https://api.line.me/v2/profile", {
+      method: "GET",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Bearer ${token}`,
       },
-      body: params,
     });
 
     if (!response.ok) {
       const errorData = await response.json();
       console.error("LINE Token Verification Failed:", errorData);
-      return { userId: null, error: "Invalid LINE ID Token" };
+      return { userId: null, error: "Invalid LINE Access Token" };
     }
 
     const data = await response.json();
-    return { userId: data.sub };
+    return { userId: data.userId };
   } catch (error) {
     console.error("LINE Token Verification Error:", error);
     return { userId: null, error: "Token verification network error" };

@@ -64,7 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const profile = await liff.getProfile();
         setUser(profile);
-        setIdToken(liff.getIDToken());
+        // Use accessToken instead of idToken since openid scope might not be enabled
+        setIdToken(liff.getAccessToken());
       } catch (err: any) {
         console.error('LIFF initialization failed', err);
         setError(err.message || 'Failed to initialize LINE login');
