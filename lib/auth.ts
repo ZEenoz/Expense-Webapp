@@ -16,11 +16,13 @@ export async function verifyLineToken(request: Request): Promise<{ userId: strin
 
   const idToken = authHeader.split(" ")[1];
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID || "2009678810-bt80GDIl";
+  // LINE token verify endpoint requires the Channel ID (client_id), not the full LIFF ID
+  const channelId = liffId.split("-")[0];
 
   try {
     const params = new URLSearchParams();
     params.append('id_token', idToken);
-    params.append('client_id', liffId);
+    params.append('client_id', channelId);
 
     const response = await fetch("https://api.line.me/oauth2/v2.1/verify", {
       method: "POST",
