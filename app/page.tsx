@@ -32,7 +32,7 @@ export default function InstallmentsPage() {
     payAll,
     addExpense,
     deleteExpense,
-  } = useExpenses(user?.userId);
+  } = useExpenses();
 
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

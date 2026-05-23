@@ -28,7 +28,7 @@ export default function TransactionsPage() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
-  } = useTransactions(user?.userId);
+  } = useTransactions();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);

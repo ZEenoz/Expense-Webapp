@@ -1,160 +1,92 @@
 import { useState, useCallback } from "react";
 import { Transaction, TransactionFormData } from "@/types/transaction";
 import { useToast } from "@/context/ToastContext";
+import { apiClient } from "@/lib/apiClient";
+import { useAuth } from "@/context/AuthContext";
 
-export function useTransactions(userId?: string) {
+export function useTransactions() {
+  const { idToken } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
-  /**
-   * Fetch all transactions
-   */
   const fetchTransactions = useCallback(async () => {
-    if (!userId) return;
-
+    if (!idToken) return;
     setIsLoading(true);
-    try {
-      const response = await fetch("/api/transactions", {
-        headers: {
-          "x-user-id": userId,
-        },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setTransactions(data.data || []);
-      } else {
-        throw new Error(data.error || "Failed to fetch transactions");
-      }
-    } catch (error) {
-      console.error("Error fetching transactions:", error);
-      showToast(
-        error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการโหลดข้อมูล",
-        "error"
-      );
-    } finally {
-      setIsLoading(false);
+    const res = await apiClient<Transaction[]>("/api/transactions", {}, idToken);
+    
+    if (res.success && res.data) {
+      setTransactions(res.data);
+    } else {
+      console.error("Error fetching transactions:", res.error);
+      showToast(res.error || "เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
     }
-  }, [userId, showToast]);
+    setIsLoading(false);
+  }, [idToken, showToast]);
 
-  /**
-   * Add a new transaction
-   */
   const addTransaction = useCallback(
     async (data: TransactionFormData) => {
-      if (!userId) return;
-
+      if (!idToken) return;
       setIsLoading(true);
-      try {
-        const response = await fetch("/api/transactions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": userId,
-          },
-          body: JSON.stringify(data),
-        });
+      const res = await apiClient("/api/transactions", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }, idToken);
 
-        const result = await response.json();
-
-        if (result.success) {
-          showToast(
-            data.type === "income" ? "เพิ่มรายรับสำเร็จ" : "เพิ่มรายจ่ายสำเร็จ",
-            "success"
-          );
-          await fetchTransactions(); // Refresh data
-        } else {
-          throw new Error(result.error || "Failed to add transaction");
-        }
-      } catch (error) {
-        console.error("Error adding transaction:", error);
+      if (res.success) {
         showToast(
-          error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการเพิ่มรายการ",
-          "error"
+          data.type === "income" ? "เพิ่มรายรับสำเร็จ" : "เพิ่มรายจ่ายสำเร็จ",
+          "success"
         );
-      } finally {
-        setIsLoading(false);
+        await fetchTransactions();
+      } else {
+        console.error("Error adding transaction:", res.error);
+        showToast(res.error || "เกิดข้อผิดพลาดในการเพิ่มรายการ", "error");
       }
+      setIsLoading(false);
     },
-    [userId, showToast, fetchTransactions]
+    [idToken, showToast, fetchTransactions]
   );
 
-  /**
-   * Update a transaction
-   */
   const updateTransaction = useCallback(
     async (rowIndex: number, data: TransactionFormData) => {
-      if (!userId) return;
-
+      if (!idToken) return;
       setIsLoading(true);
-      try {
-        const response = await fetch(`/api/transactions/${rowIndex}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "x-user-id": userId,
-          },
-          body: JSON.stringify(data),
-        });
+      const res = await apiClient(`/api/transactions/${rowIndex}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }, idToken);
 
-        const result = await response.json();
-
-        if (result.success) {
-          showToast("แก้ไขรายการสำเร็จ", "success");
-          await fetchTransactions(); // Refresh data
-        } else {
-          throw new Error(result.error || "Failed to update transaction");
-        }
-      } catch (error) {
-        console.error("Error updating transaction:", error);
-        showToast(
-          error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการแก้ไขรายการ",
-          "error"
-        );
-      } finally {
-        setIsLoading(false);
+      if (res.success) {
+        showToast("แก้ไขรายการสำเร็จ", "success");
+        await fetchTransactions();
+      } else {
+        console.error("Error updating transaction:", res.error);
+        showToast(res.error || "เกิดข้อผิดพลาดในการแก้ไขรายการ", "error");
       }
+      setIsLoading(false);
     },
-    [userId, showToast, fetchTransactions]
+    [idToken, showToast, fetchTransactions]
   );
 
-  /**
-   * Delete a transaction
-   */
   const deleteTransaction = useCallback(
     async (rowIndex: number) => {
-      if (!userId) return;
-
+      if (!idToken) return;
       setIsLoading(true);
-      try {
-        const response = await fetch(`/api/transactions?rowIndex=${rowIndex}`, {
-          method: "DELETE",
-          headers: {
-            "x-user-id": userId,
-          },
-        });
+      const res = await apiClient(`/api/transactions?rowIndex=${rowIndex}`, {
+        method: "DELETE",
+      }, idToken);
 
-        const result = await response.json();
-
-        if (result.success) {
-          showToast("ลบรายการสำเร็จ", "success");
-          await fetchTransactions(); // Refresh data
-        } else {
-          throw new Error(result.error || "Failed to delete transaction");
-        }
-      } catch (error) {
-        console.error("Error deleting transaction:", error);
-        showToast(
-          error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการลบรายการ",
-          "error"
-        );
-      } finally {
-        setIsLoading(false);
+      if (res.success) {
+        showToast("ลบรายการสำเร็จ", "success");
+        await fetchTransactions();
+      } else {
+        console.error("Error deleting transaction:", res.error);
+        showToast(res.error || "เกิดข้อผิดพลาดในการลบรายการ", "error");
       }
+      setIsLoading(false);
     },
-    [userId, showToast, fetchTransactions]
+    [idToken, showToast, fetchTransactions]
   );
 
   return {

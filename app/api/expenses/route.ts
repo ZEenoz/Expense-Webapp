@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSheetData, appendRows, parseSheetRow, updateCell } from "@/lib/googleSheets";
 import { Expense, ExpenseFormData } from "@/types/expense";
+import { verifyLineToken } from "@/lib/auth";
+import { ExpensePostSchema, ExpensePatchSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic"; // Always fetch fresh data
 
@@ -9,8 +11,10 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
 
-    // Extract userId from headers (will be sent by LIFF later)
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
+    if (!userId) {
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
+    }
 
     // Fetch from Google Sheets
     let expenses = await getSheetData(userId || undefined);
@@ -40,28 +44,24 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body: ExpenseFormData = await request.json();
-
-    // Validate required fields
-    if (
-      !body.itemName ||
-      !body.totalPrice ||
-      !body.totalInstallments ||
-      !body.startMonth
-    ) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+    const { userId, error } = await verifyLineToken(request);
+    if (!userId) {
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
-    const monthlyPayment = Math.round((body.totalPrice / body.totalInstallments) * 100) / 100;
-    const [startYear, startMonth] = body.startMonth.split("-").map(Number);
+    const body = await request.json();
+    const validated = ExpensePostSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json({ success: false, error: validated.error.issues[0].message }, { status: 400 });
+    }
+    const safeBody = validated.data;
+
+    const monthlyPayment = Math.round((safeBody.totalPrice / safeBody.totalInstallments) * 100) / 100;
+    const [startYear, startMonth] = safeBody.startMonth.split("-").map(Number);
     const now = new Date().toISOString();
 
-    // Build rows for each installment (including empty Paid_Status column H)
     const rows: string[][] = [];
-    for (let i = 0; i < body.totalInstallments; i++) {
+    for (let i = 0; i < safeBody.totalInstallments; i++) {
       const dueDate = new Date(startYear, startMonth - 1 + i);
       const dueMonth = `${dueDate.getFullYear()}-${String(
         dueDate.getMonth() + 1
@@ -69,31 +69,21 @@ export async function POST(request: Request) {
 
       rows.push([
         now,                                              // A: Timestamp
-        body.itemName,                                     // B: Item_Name
-        String(body.totalPrice),                           // C: Total_Price
-        `${i + 1}/ ${body.totalInstallments}`,            // D: Installment_Status
-        String(monthlyPayment),                            // E: Monthly_Payment
-        dueMonth,                                          // F: Due_Month
-        body.category || "",                               // G: Category
-        "",                                                // H: Paid_Status (empty = unpaid)
+        safeBody.itemName,                                // B: Item_Name
+        String(safeBody.totalPrice),                      // C: Total_Price
+        `${i + 1}/ ${safeBody.totalInstallments}`,       // D: Installment_Status
+        String(monthlyPayment),                           // E: Monthly_Payment
+        dueMonth,                                         // F: Due_Month
+        safeBody.category || "",                          // G: Category
+        "",                                               // H: Paid_Status (empty = unpaid)
       ]);
     }
 
-    // Extract userId from headers
-    const userId = request.headers.get("x-user-id");
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    // Append to Google Sheets
     const updatedRows = await appendRows(rows, userId);
 
     return NextResponse.json({
       success: true,
-      message: `Added ${updatedRows} installment entries for "${body.itemName}"`,
+      message: `Added ${updatedRows} installment entries for "${safeBody.itemName}"`,
       rowsAdded: updatedRows,
     });
   } catch (error) {
@@ -115,26 +105,20 @@ export async function POST(request: Request) {
  */
 export async function PATCH(request: Request) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
     if (!userId) {
-      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { rowIndex, rowIndices, paid } = body as { 
-      rowIndex?: number; 
-      rowIndices?: number[]; 
-      paid: boolean 
-    };
+    const validated = ExpensePatchSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json({ success: false, error: validated.error.issues[0].message }, { status: 400 });
+    }
+
+    const { rowIndex, rowIndices, paid } = validated.data;
 
     const targetIndices = rowIndices || (rowIndex !== undefined ? [rowIndex] : []);
-
-    if (targetIndices.length === 0 || typeof paid !== "boolean") {
-      return NextResponse.json(
-        { success: false, error: "Invalid request. Missing rowIndex or paid status" },
-        { status: 400 }
-      );
-    }
 
     // Security check: Verify all rows belong to the user
     const expenses = await getSheetData(userId);
@@ -161,12 +145,9 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -205,34 +186,10 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Get sheet ID
-    const sheetMetadata = await sheets.spreadsheets.get({ spreadsheetId });
-    const sheet = sheetMetadata.data.sheets?.find(
-      s => s.properties?.title === sheetName
-    );
-    const sheetId = sheet?.properties?.sheetId;
-
-    if (sheetId === undefined) {
-      throw new Error("Sheet not found");
-    }
-
-    // Delete row
-    await sheets.spreadsheets.batchUpdate({
+    // Clear row instead of deleting to prevent rowIndex shifting
+    await sheets.spreadsheets.values.clear({
       spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: "ROWS",
-                startIndex: parseInt(rowIndex) + 1, // +1 for header
-                endIndex: parseInt(rowIndex) + 2,
-              },
-            },
-          },
-        ],
-      },
+      range: `${sheetName}!A${parseInt(rowIndex) + 2}:I${parseInt(rowIndex) + 2}`,
     });
 
     return NextResponse.json({

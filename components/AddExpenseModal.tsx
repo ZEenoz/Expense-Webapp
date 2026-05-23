@@ -14,7 +14,7 @@ interface AddExpenseModalProps {
 
 export default function AddExpenseModal({ isOpen, onClose, onSubmit }: AddExpenseModalProps) {
   const { user } = useAuth();
-  const { categories, fetchCategories, addCategory } = useSettings(user?.userId);
+  const { categories, fetchCategories, addCategory } = useSettings();
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     itemName: "",

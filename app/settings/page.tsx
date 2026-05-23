@@ -70,7 +70,7 @@ export default function SettingsPage() {
     categories, userConfig,
     isLoading: isSettingsLoading,
     fetchCategories, addCategory, fetchConfig, saveConfig,
-  } = useSettings(user?.userId);
+  } = useSettings();
 
   // ── Notification state ──
   const [isNotifyEnabled, setIsNotifyEnabled] = useState(false);

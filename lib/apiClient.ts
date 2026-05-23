@@ -13,12 +13,12 @@ interface ApiResponse<T> {
 export async function apiClient<T>(
   url: string,
   options: RequestInit = {},
-  userId?: string
+  token?: string | null
 ): Promise<ApiResponse<T>> {
   const headers = new Headers(options.headers || {});
   
-  if (userId) {
-    headers.set("x-user-id", userId);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
   
   if (options.body && !headers.has("Content-Type")) {

@@ -96,8 +96,8 @@ function StatCard({
 // ─── Main Page ───────────────────────────────────────────────
 export default function ReportsPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { expenses, isLoading: expLoading, fetchExpenses } = useExpenses(user?.userId);
-  const { transactions, isLoading: txLoading, fetchTransactions } = useTransactions(user?.userId);
+  const { expenses, isLoading: expLoading, fetchExpenses } = useExpenses();
+  const { transactions, isLoading: txLoading, fetchTransactions } = useTransactions();
 
   const [activeTab, setActiveTab] = useState<"overview" | "installments" | "transactions">("overview");
 

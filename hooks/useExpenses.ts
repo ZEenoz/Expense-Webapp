@@ -4,33 +4,35 @@ import { useState, useCallback, useMemo } from "react";
 import { Expense } from "@/types/expense";
 import { apiClient } from "@/lib/apiClient";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 
-export function useExpenses(userId: string | undefined) {
+export function useExpenses() {
+  const { idToken } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const fetchExpenses = useCallback(async () => {
-    if (!userId) return;
+    if (!idToken) return;
     setIsLoading(true);
     setError(null);
     
-    const res = await apiClient<Expense[]>("/api/expenses", {}, userId);
+    const res = await apiClient<Expense[]>("/api/expenses", {}, idToken);
     if (res.success && res.data) {
       setExpenses(res.data);
     } else {
       setError(res.error || "Failed to fetch expenses");
     }
     setIsLoading(false);
-  }, [userId]);
+  }, [idToken]);
 
   const markPaid = useCallback(async (rowIndex: number, paid: boolean) => {
-    if (!userId) return false;
+    if (!idToken) return false;
     const res = await apiClient("/api/expenses", {
       method: "PATCH",
       body: JSON.stringify({ rowIndex, paid }),
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchExpenses();
@@ -40,14 +42,14 @@ export function useExpenses(userId: string | undefined) {
       showToast(res.error || "เกิดข้อผิดพลาด", "error");
       return false;
     }
-  }, [userId, fetchExpenses, showToast]);
+  }, [idToken, fetchExpenses, showToast]);
 
   const payAll = useCallback(async (rowIndices: number[]) => {
-    if (!userId || rowIndices.length === 0) return false;
+    if (!idToken || rowIndices.length === 0) return false;
     const res = await apiClient("/api/expenses", {
       method: "PATCH",
       body: JSON.stringify({ rowIndices, paid: true }),
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchExpenses();
@@ -57,14 +59,14 @@ export function useExpenses(userId: string | undefined) {
       showToast(res.error || "เกิดข้อผิดพลาด", "error");
       return false;
     }
-  }, [userId, fetchExpenses, showToast]);
+  }, [idToken, fetchExpenses, showToast]);
 
   const addExpense = useCallback(async (data: any) => {
-    if (!userId) return false;
+    if (!idToken) return false;
     const res = await apiClient("/api/expenses", {
       method: "POST",
       body: JSON.stringify(data),
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchExpenses();
@@ -74,13 +76,13 @@ export function useExpenses(userId: string | undefined) {
       showToast(res.error || "ไม่สามารถบันทึกได้", "error");
       return false;
     }
-  }, [userId, fetchExpenses, showToast]);
+  }, [idToken, fetchExpenses, showToast]);
 
   const deleteExpense = useCallback(async (rowIndex: number) => {
-    if (!userId) return false;
+    if (!idToken) return false;
     const res = await apiClient(`/api/expenses?rowIndex=${rowIndex}`, {
       method: "DELETE",
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchExpenses();
@@ -90,7 +92,7 @@ export function useExpenses(userId: string | undefined) {
       showToast(res.error || "ไม่สามารถลบรายการได้", "error");
       return false;
     }
-  }, [userId, fetchExpenses, showToast]);
+  }, [idToken, fetchExpenses, showToast]);
 
   return {
     expenses,

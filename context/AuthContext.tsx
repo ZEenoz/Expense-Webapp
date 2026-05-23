@@ -12,6 +12,7 @@ interface UserProfile {
 
 interface AuthContextType {
   user: UserProfile | null;
+  idToken: string | null;
   isLoading: boolean;
   error: string | null;
   isAdmin: boolean;
@@ -22,6 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [idToken, setIdToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -45,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           displayName: "Developer (Mock)",
           pictureUrl: "https://ui-avatars.com/api/?name=Dev+Mock&background=random",
         });
+        setIdToken("mock-token-dev");
         setIsLoading(false);
         return;
       }
@@ -61,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const profile = await liff.getProfile();
         setUser(profile);
+        setIdToken(liff.getIDToken());
       } catch (err: any) {
         console.error('LIFF initialization failed', err);
         setError(err.message || 'Failed to initialize LINE login');
@@ -80,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, error, isAdmin, logout }}>
+    <AuthContext.Provider value={{ user, idToken, isLoading, error, isAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );

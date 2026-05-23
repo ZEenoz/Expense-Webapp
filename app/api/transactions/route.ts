@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { Transaction, TransactionFormData } from "@/types/transaction";
+import { verifyLineToken } from "@/lib/auth";
+import { TransactionPostSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
 
@@ -69,12 +71,9 @@ function parseTransactionRow(row: string[], index: number): Transaction | null {
  */
 export async function GET(request: Request) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
     const sheets = getSheetsClient();
@@ -118,23 +117,17 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
-    const body: TransactionFormData = await request.json();
-
-    // Validate required fields
-    if (!body.type || !body.amount || !body.category || !body.date) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
+    const body = await request.json();
+    const validated = TransactionPostSchema.safeParse(body);
+    if (!validated.success) {
+      return NextResponse.json({ success: false, error: validated.error.issues[0].message }, { status: 400 });
     }
+    const safeBody = validated.data;
 
     const sheets = getSheetsClient();
     const { spreadsheetId, transactionSheetName } = getSheetConfig();
@@ -144,13 +137,13 @@ export async function POST(request: Request) {
     const row = [
       now,
       userId,
-      body.type,
-      String(body.amount),
-      body.category,
-      body.description || "",
-      body.date,
-      body.paymentMethod || "",
-      body.tags?.join(", ") || "",
+      safeBody.type,
+      String(safeBody.amount),
+      safeBody.category,
+      safeBody.description || "",
+      safeBody.date,
+      safeBody.paymentMethod || "",
+      Array.isArray(safeBody.tags) ? safeBody.tags.join(", ") : "",
     ];
 
     // Append to sheet
@@ -179,12 +172,9 @@ export async function POST(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const { userId, error } = await verifyLineToken(request);
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: error || "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -222,34 +212,10 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Get sheet ID
-    const sheetMetadata = await sheets.spreadsheets.get({ spreadsheetId });
-    const sheet = sheetMetadata.data.sheets?.find(
-      s => s.properties?.title === transactionSheetName
-    );
-    const sheetId = sheet?.properties?.sheetId;
-
-    if (sheetId === undefined) {
-      throw new Error("Sheet not found");
-    }
-
-    // Delete row
-    await sheets.spreadsheets.batchUpdate({
+    // Clear row instead of deleting to prevent rowIndex shifting
+    await sheets.spreadsheets.values.clear({
       spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: "ROWS",
-                startIndex: parseInt(rowIndex) + 1, // +1 for header
-                endIndex: parseInt(rowIndex) + 2,
-              },
-            },
-          },
-        ],
-      },
+      range: `${transactionSheetName}!A${parseInt(rowIndex) + 2}:I${parseInt(rowIndex) + 2}`,
     });
 
     return NextResponse.json({

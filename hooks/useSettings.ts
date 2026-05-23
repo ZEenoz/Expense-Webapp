@@ -4,27 +4,29 @@ import { useState, useCallback } from "react";
 import { apiClient } from "@/lib/apiClient";
 import { UserConfig } from "@/lib/googleSheets";
 import { useToast } from "@/context/ToastContext";
+import { useAuth } from "@/context/AuthContext";
 
-export function useSettings(userId: string | undefined) {
+export function useSettings() {
+  const { idToken } = useAuth();
   const [categories, setCategories] = useState<string[]>([]);
   const [userConfig, setUserConfig] = useState<UserConfig | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
   const fetchCategories = useCallback(async () => {
-    if (!userId) return;
-    const res = await apiClient<string[]>("/api/categories", {}, userId);
+    if (!idToken) return;
+    const res = await apiClient<string[]>("/api/categories", {}, idToken);
     if (res.success && res.data) {
       setCategories(res.data);
     }
-  }, [userId]);
+  }, [idToken]);
 
   const addCategory = useCallback(async (name: string) => {
-    if (!userId) return false;
+    if (!idToken) return false;
     const res = await apiClient("/api/categories", {
       method: "POST",
       body: JSON.stringify({ categoryName: name }),
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchCategories();
@@ -34,24 +36,24 @@ export function useSettings(userId: string | undefined) {
       showToast(res.error || "ไม่สามารถเพิ่มหมวดหมู่ได้", "error");
       return false;
     }
-  }, [userId, fetchCategories, showToast]);
+  }, [idToken, fetchCategories, showToast]);
 
   const fetchConfig = useCallback(async () => {
-    if (!userId) return;
+    if (!idToken) return;
     setIsLoading(true);
-    const res = await apiClient<UserConfig>("/api/settings", {}, userId);
+    const res = await apiClient<UserConfig>("/api/settings", {}, idToken);
     if (res.success && res.data) {
       setUserConfig(res.data);
     }
     setIsLoading(false);
-  }, [userId]);
+  }, [idToken]);
 
   const saveConfig = useCallback(async (config: Partial<UserConfig>) => {
-    if (!userId) return false;
+    if (!idToken) return false;
     const res = await apiClient("/api/settings", {
       method: "POST",
       body: JSON.stringify(config),
-    }, userId);
+    }, idToken);
     
     if (res.success) {
       await fetchConfig();
@@ -61,7 +63,7 @@ export function useSettings(userId: string | undefined) {
       showToast(res.error || "บันทึกไม่สำเร็จ", "error");
       return false;
     }
-  }, [userId, fetchConfig, showToast]);
+  }, [idToken, fetchConfig, showToast]);
 
   return {
     categories,

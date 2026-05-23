@@ -12,7 +12,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { user } = useAuth();
-  const { userConfig, fetchConfig, saveConfig, isLoading } = useSettings(user?.userId);
+  const { userConfig, fetchConfig, saveConfig, isLoading } = useSettings();
 
   const [isNotifyEnabled, setIsNotifyEnabled] = useState(false);
   const [reminderDays, setReminderDays] = useState<number[]>([1]);

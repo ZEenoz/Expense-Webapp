@@ -22,11 +22,11 @@ interface TransactionListProps {
 }
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  cash:     "💵 เงินสด",
+  cash: "💵 เงินสด",
   transfer: "🏦 โอนเงิน",
-  credit:   "💳 เครดิต",
-  debit:    "💳 เดบิต",
-  other:    "📝 อื่นๆ",
+  credit: "💳 เครดิต",
+  debit: "💳 เดบิต",
+  other: "📝 อื่นๆ",
 };
 
 const PAGE_SIZE = 15;
@@ -91,14 +91,12 @@ export default function TransactionList({
         return (
           <div
             key={`${tx.rowIndex}-${idx}`}
-            className={`group relative flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-4 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.04] ${
-              isDeleting ? "opacity-50 pointer-events-none" : ""
-            }`}
+            className={`group relative flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3 sm:p-4 transition-all duration-200 hover:border-white/10 hover:bg-white/[0.04] ${isDeleting ? "opacity-50 pointer-events-none" : ""
+              }`}
           >
             {/* Type Icon */}
-            <div className={`flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl ${
-              isIncome ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
-            }`}>
+            <div className={`flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl ${isIncome ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+              }`}>
               {isIncome ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
             </div>
 
@@ -110,9 +108,8 @@ export default function TransactionList({
                     {tx.description || tx.category}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-semibold ${
-                      isIncome ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
-                    }`}>
+                    <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-semibold ${isIncome ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+                      }`}>
                       {tx.category}
                     </span>
                     {tx.paymentMethod && PAYMENT_METHOD_LABELS[tx.paymentMethod] && (
@@ -136,31 +133,31 @@ export default function TransactionList({
             {/* Actions
                 Desktop: show on hover
                 Mobile: always-visible ⋮ menu button */}
-            <div className="flex-shrink-0 flex items-center">
+            <div className="flex-shrink-0 flex items-center ml-1 sm:ml-4">
               {/* Desktop hover buttons */}
-              <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="hidden sm:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button
                   onClick={() => handleEdit(tx)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
                   title="แก้ไข"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(tx.rowIndex!)}
                   disabled={isDeleting}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400"
+                  className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50"
                   title="ลบ"
                 >
-                  {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 </button>
               </div>
 
               {/* Mobile: ⋮ button — always visible */}
-              <div className="relative sm:hidden">
+              <div className="relative sm:hidden ml-1.5">
                 <button
                   onClick={() => setOpenMenuId(isMenuOpen ? null : tx.rowIndex ?? null)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 active:bg-white/10 active:text-white transition-colors"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 bg-white/5 active:bg-white/10 transition-colors"
                   aria-label="เมนูเพิ่มเติม"
                 >
                   <MoreVertical className="h-4 w-4" />
