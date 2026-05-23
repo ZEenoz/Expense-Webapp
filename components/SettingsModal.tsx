@@ -15,7 +15,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { userConfig, fetchConfig, saveConfig, isLoading } = useSettings(user?.userId);
 
   const [isNotifyEnabled, setIsNotifyEnabled] = useState(false);
-  const [reminderDay, setReminderDay] = useState(1);
+  const [reminderDays, setReminderDays] = useState<number[]>([1]);
   const [isSaving, setIsSaving] = useState(false);
 
   // 1. Initial fetch when modal opens
@@ -30,17 +30,25 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   useEffect(() => {
     if (isOpen && userConfig) {
       setIsNotifyEnabled(userConfig.isNotifyEnabled);
-      setReminderDay(userConfig.reminderDay);
+      setReminderDays(userConfig.reminderDays || [1]);
     }
   }, [isOpen, userConfig]);
 
   const handleSave = async () => {
     setIsSaving(true);
-    const success = await saveConfig({ reminderDay, isNotifyEnabled });
+    const success = await saveConfig({ reminderDays, isNotifyEnabled });
     if (success) {
       onClose();
     }
     setIsSaving(false);
+  };
+
+  const toggleDay = (day: number) => {
+    setReminderDays(prev => 
+      prev.includes(day) 
+        ? prev.filter(d => d !== day) 
+        : [...prev, day].sort((a,b) => a-b)
+    );
   };
 
   if (!isOpen) return null;
@@ -104,26 +112,27 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="flex items-center justify-between">
                     <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
                       <Calendar className="h-4 w-4 text-violet-400" />
-                      วันที่ต้องการแจ้งเตือน
+                      วันที่ต้องการแจ้งเตือน (เลือกได้หลายวัน)
                     </label>
-                    <span className="text-xs font-bold text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded-full">
-                      วันที่ {reminderDay}
-                    </span>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {[1, 5, 10, 15, 20, 25, 28].map((day) => (
-                      <button
-                        key={day}
-                        onClick={() => setReminderDay(day)}
-                        className={`flex h-10 min-w-[42px] flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition-all ${reminderDay === day
-                          ? 'border-violet-500 bg-violet-500/20 text-white shadow-lg shadow-violet-500/10'
-                          : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
+                    {[1, 2, 3, 4, 5, 10, 15, 20, 25, 28].map((day) => {
+                      const isSelected = reminderDays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          onClick={() => toggleDay(day)}
+                          className={`flex h-10 min-w-[42px] flex-1 items-center justify-center rounded-lg border text-sm font-semibold transition-all ${
+                            isSelected
+                              ? 'border-violet-500 bg-violet-500/20 text-white shadow-lg shadow-violet-500/10'
+                              : 'border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
                           }`}
-                      >
-                        {day}
-                      </button>
-                    ))}
+                        >
+                          {day}
+                        </button>
+                      );
+                    })}
                   </div>
                   <div className="rounded-lg bg-amber-500/10 p-3 border border-amber-500/20">
                     <p className="text-[10px] text-amber-300 leading-relaxed italic">
