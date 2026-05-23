@@ -31,46 +31,27 @@ export function createUnpaidExpensesFlex(expenses: Expense[]) {
     };
   }
 
-  const items = unpaidThisMonth.map((e) => ({
+  const totalAmount = unpaidThisMonth.reduce((sum, e) => sum + e.monthlyPayment, 0);
+
+  const itemContents = unpaidThisMonth.map((e) => ({
     type: "box",
     layout: "vertical",
-    margin: "lg",
+    margin: "md",
     spacing: "sm",
     contents: [
       {
         type: "box",
         layout: "horizontal",
         contents: [
-          {
-            type: "text",
-            text: e.itemName,
-            size: "md",
-            color: "#ffffff",
-            flex: 4,
-            weight: "bold",
-          },
-          {
-            type: "text",
-            text: formatCurrency(e.monthlyPayment),
-            size: "md",
-            color: "#ffffff",
-            align: "end",
-            flex: 3,
-            weight: "bold",
-          },
-        ],
+          { type: "text", text: e.itemName, size: "sm", color: "#555555", flex: 4, wrap: true },
+          { type: "text", text: formatCurrency(e.monthlyPayment), size: "sm", color: "#111111", align: "end", weight: "bold", flex: 3 }
+        ]
       },
       {
         type: "box",
         layout: "horizontal",
         contents: [
-          {
-            type: "text",
-            text: `งวดที่ ${e.currentInstallment}/${e.totalInstallments}`,
-            size: "xs",
-            color: "#94a3b8",
-            flex: 1,
-          },
+          { type: "text", text: `งวดที่ ${e.currentInstallment}/${e.totalInstallments}`, size: "xs", color: "#999999", flex: 1, align: "start", gravity: "center" },
           {
             type: "button",
             action: {
@@ -83,50 +64,43 @@ export function createUnpaidExpensesFlex(expenses: Expense[]) {
             color: "#10b981",
             height: "sm",
             flex: 1,
-          },
-        ],
-      },
-      {
-        type: "separator",
-        margin: "md",
-        color: "#1e293b",
-      },
-    ],
+          }
+        ]
+      }
+    ]
   }));
 
   return {
     type: "flex",
-    altText: "รายการค้างชำระของคุณ",
+    altText: "สรุปยอดรายจ่าย",
     contents: {
       type: "bubble",
-      styles: {
-        header: { backgroundColor: "#0f172a" },
-        body: { backgroundColor: "#1e293b" },
-        footer: { backgroundColor: "#0f172a" },
-      },
       header: {
         type: "box",
         layout: "vertical",
+        backgroundColor: "#273132",
         contents: [
-          {
-            type: "text",
-            text: "รายการที่ต้องชำระ",
-            weight: "bold",
-            size: "xl",
-            color: "#ffffff",
-          },
-          {
-            type: "text",
-            text: "ประจำเดือนนี้",
-            size: "sm",
-            color: "#60a5fa",
-          },
-        ],
+          { type: "text", text: "สรุปยอดเดือนปัจจุบัน", weight: "bold", size: "lg", color: "#FFFFFF" },
+          { type: "text", text: "ประจำเดือน " + formatMonthThai(currentMonth), size: "xs", color: "#AFAFAF" }
+        ]
       },
       body: {
         type: "box",
         layout: "vertical",
-        contents: items as any,
+        contents: [
+          { type: "text", text: "รายการค้างชำระ", size: "xs", color: "#AAAAAA", weight: "bold" },
+          ...(itemContents as any),
+          { type: "separator", margin: "xl" },
+          {
+            type: "box",
+            layout: "horizontal",
+            margin: "xl",
+            contents: [
+              { type: "text", text: "ยอดรวมสุทธิ", size: "md", color: "#111111", weight: "bold" },
+              { type: "text", text: formatCurrency(totalAmount), size: "md", color: "#E63946", align: "end", weight: "bold" }
+            ]
+          }
+        ]
       },
       footer: {
         type: "box",
@@ -134,17 +108,17 @@ export function createUnpaidExpensesFlex(expenses: Expense[]) {
         contents: [
           {
             type: "button",
+            style: "primary",
+            color: "#1DB954",
             action: {
               type: "uri",
-              label: "ดู Dashboard ทั้งหมด",
+              label: "เปิด Dashboard",
               uri: `https://liff.line.me/${process.env.LIFF_ID || ''}`,
-            },
-            style: "link",
-            color: "#60a5fa",
-          },
-        ],
-      },
-    },
+            }
+          }
+        ]
+      }
+    }
   };
 }
 
