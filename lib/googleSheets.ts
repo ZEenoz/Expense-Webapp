@@ -223,13 +223,30 @@ export async function addCategory(userId: string, categoryName: string): Promise
   const settingsSheetName = "Settings";
 
   try {
-    // Check whether the sheet has data yet (i.e. has a header row)
-    const existing = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `${settingsSheetName}!A1:B1`,
-    });
+    let hasHeader = false;
 
-    const hasHeader = existing.data.values && existing.data.values.length > 0;
+    try {
+      // Check whether the sheet has data yet (i.e. has a header row)
+      const existing = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `${settingsSheetName}!A1:B1`,
+      });
+      hasHeader = !!(existing.data.values && existing.data.values.length > 0);
+    } catch (error: any) {
+      // If the sheet doesn't exist, Google API throws "Unable to parse range"
+      if (error.message && error.message.includes("Unable to parse range")) {
+        // Create the sheet automatically
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId,
+          requestBody: {
+            requests: [{ addSheet: { properties: { title: settingsSheetName } } }],
+          },
+        });
+        hasHeader = false; // Brand new sheet, definitely no header
+      } else {
+        throw error; // Rethrow if it's a different error
+      }
+    }
 
     // If the sheet is completely empty, write the header row first
     if (!hasHeader) {
