@@ -65,7 +65,7 @@ export default function InstallmentList({
           <CreditCard className="h-10 w-10 text-slate-600" />
         </div>
         <h3 className="text-base font-semibold text-slate-400">ไม่มีรายการในเดือนนี้</h3>
-        <p className="mt-1 text-sm text-slate-600">กดปุ่ม "เพิ่มรายการผ่อน" เพื่อเริ่มต้น</p>
+        <p className="mt-1 text-sm text-slate-500">กดปุ่ม "เพิ่มรายการผ่อน" เพื่อเริ่มต้น</p>
       </div>
     );
   }
@@ -96,7 +96,7 @@ export default function InstallmentList({
             {showDivider && (
               <div className="flex items-center gap-3 py-2">
                 <div className="h-px flex-1 bg-emerald-500/20" />
-                <span className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-emerald-400/60 uppercase tracking-widest">
                   จ่ายแล้ว ({paid.length})
                 </span>
                 <div className="h-px flex-1 bg-emerald-500/20" />
@@ -105,23 +105,21 @@ export default function InstallmentList({
 
             {/* Card */}
             <div
-              className={`group relative flex items-center gap-3 rounded-2xl border p-3 sm:p-4 transition-all duration-200 ${
-                isDeletingThis
+              className={`group relative flex items-center gap-3 rounded-2xl border p-3 sm:p-4 transition-all duration-200 ${isDeletingThis
                   ? "opacity-40 pointer-events-none"
                   : isSuccessThis
-                  ? "border-emerald-500/30 bg-emerald-500/[0.06]"
-                  : isPaid
-                  ? "border-white/[0.04] bg-white/[0.01] opacity-60"
-                  : "border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
-              }`}
+                    ? "border-emerald-500/30 bg-emerald-500/[0.06]"
+                    : isPaid
+                      ? "border-white/[0.04] bg-white/[0.01] opacity-60"
+                      : "border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
+                }`}
             >
               {/* Icon */}
               <div
-                className={`flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
-                  isPaid
+                className={`flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold ${isPaid
                     ? "bg-emerald-500/15 text-emerald-400"
                     : "bg-gradient-to-br from-violet-500/20 to-blue-500/20 text-violet-400"
-                }`}
+                  }`}
               >
                 {isPaid ? (
                   <Check className="h-5 w-5" />
@@ -139,12 +137,12 @@ export default function InstallmentList({
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {/* งวด badge */}
-                      <span className="inline-flex items-center rounded-lg bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold text-violet-400">
+                      <span className="inline-flex items-center rounded-lg bg-violet-500/15 px-2 py-0.5 text-[11px] font-semibold text-violet-400">
                         งวด {expense.currentInstallment}/{expense.totalInstallments}
                       </span>
                       {/* หมวดหมู่ */}
                       {expense.category && (
-                        <span className="inline-flex items-center rounded-lg bg-white/[0.06] px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                        <span className="inline-flex items-center rounded-lg bg-white/[0.06] px-2 py-0.5 text-[11px] font-medium text-slate-400">
                           {expense.category}
                         </span>
                       )}
@@ -154,15 +152,14 @@ export default function InstallmentList({
                     <div className="mt-2 flex items-center gap-2">
                       <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-700 ${
-                            isPaid
+                          className={`h-full rounded-full transition-all duration-700 ${isPaid
                               ? "bg-emerald-500/60"
                               : "bg-gradient-to-r from-violet-500 to-blue-500"
-                          }`}
+                            }`}
                           style={{ width: `${progress}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-slate-600 flex-shrink-0 w-8 text-right">
+                      <span className="text-[11px] font-medium text-slate-500 flex-shrink-0 w-8 text-right">
                         {Math.round(progress)}%
                       </span>
                     </div>
@@ -173,7 +170,7 @@ export default function InstallmentList({
                     <p className={`text-sm sm:text-base font-bold ${isPaid ? "text-slate-500 line-through" : "text-white"}`}>
                       {formatCurrency(expense.monthlyPayment)}
                     </p>
-                    <p className="text-[10px] text-slate-600">
+                    <p className="text-[11px] text-slate-500">
                       รวม {formatCurrency(expense.totalPrice)}
                     </p>
                   </div>
@@ -198,7 +195,7 @@ export default function InstallmentList({
                 <button
                   onClick={() => handleDelete(expense.rowIndex!)}
                   disabled={isDeletingThis}
-                  className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl text-slate-600 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 hover:text-red-400 active:scale-95"
+                  className="hidden sm:flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500/10 hover:text-red-400 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:opacity-100"
                   title="ลบรายการ"
                 >
                   {isDeletingThis ? (
@@ -212,7 +209,7 @@ export default function InstallmentList({
                 <div className="relative sm:hidden">
                   <button
                     onClick={() => setOpenMenuId(isMenuOpen ? null : expense.rowIndex ?? null)}
-                    className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 active:bg-white/10 transition-colors"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 active:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500"
                     aria-label="เมนูเพิ่มเติม"
                   >
                     <MoreVertical className="h-5 w-5" />
@@ -243,7 +240,7 @@ export default function InstallmentList({
       {hasMore && (
         <button
           onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] py-3.5 text-sm font-medium text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white active:bg-white/[0.08] min-h-[48px]"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.02] py-3.5 text-sm font-medium text-slate-400 transition-all hover:bg-white/[0.05] hover:text-white active:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 min-h-[48px]"
         >
           <ChevronDown className="h-4 w-4" />
           โหลดเพิ่มเติม ({ordered.length - visibleCount} รายการ)
@@ -281,7 +278,7 @@ function PayButton({
       <button
         onClick={() => onMarkPaid(expense.rowIndex!, false)}
         disabled={isPaying}
-        className="group/btn flex h-9 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 active:scale-95 disabled:opacity-50"
+        className="group/btn flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 sm:px-3 text-xs font-medium text-emerald-400 transition-all hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
       >
         {isPaying ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -301,7 +298,7 @@ function PayButton({
     <button
       onClick={() => onMarkPaid(expense.rowIndex!, true)}
       disabled={isPaying}
-      className="flex h-9 items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50"
+      className="flex min-h-[44px] sm:min-h-[36px] items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-4 sm:px-3 text-xs font-semibold text-white shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/40 hover:brightness-110 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
     >
       {isPaying ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

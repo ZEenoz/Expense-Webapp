@@ -11,10 +11,10 @@ interface NavbarProps {
 }
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/":             { title: "ระบบผ่อนจ่าย",        subtitle: "ติดตามรายจ่ายผ่อนชำระทั้งหมดของคุณ"  },
-  "/transactions": { title: "รายรับรายจ่าย",        subtitle: "จัดการรายรับและรายจ่ายประจำวัน"       },
-  "/reports":      { title: "รายงาน",               subtitle: "วิเคราะห์และสรุปข้อมูลการเงิน"        },
-  "/settings":     { title: "ตั้งค่า",               subtitle: "จัดการการตั้งค่าและข้อมูลส่วนตัว"     },
+  "/": { title: "ระบบผ่อนจ่าย", subtitle: "ติดตามรายจ่ายผ่อนชำระทั้งหมดของคุณ" },
+  "/transactions": { title: "รายรับรายจ่าย", subtitle: "จัดการรายรับและรายจ่ายประจำวัน" },
+  "/reports": { title: "รายงาน", subtitle: "วิเคราะห์และสรุปข้อมูลการเงิน" },
+  "/settings": { title: "ตั้งค่า", subtitle: "จัดการการตั้งค่าและข้อมูลส่วนตัว" },
 };
 
 export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps) {
@@ -74,7 +74,7 @@ export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps
                   onClick={() => setIsDropdownOpen((v) => !v)}
                   aria-expanded={isDropdownOpen}
                   aria-haspopup="true"
-                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5 transition-all hover:bg-white/10 active:bg-white/15 min-h-[44px]"
+                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5 transition-all hover:bg-white/10 active:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px]"
                 >
                   {user.pictureUrl ? (
                     <img
@@ -105,7 +105,7 @@ export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps
                     <div className="p-1 space-y-1 mt-1">
                       <button
                         onClick={() => { logout(); setIsDropdownOpen(false); }}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 active:bg-red-500/15 min-h-[44px]"
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 active:bg-red-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 min-h-[44px]"
                       >
                         <LogOut className="h-4 w-4 flex-shrink-0" />
                         ออกจากระบบ
@@ -121,7 +121,7 @@ export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps
               <button
                 id="add-expense-btn"
                 onClick={onAddClick}
-                className="group hidden sm:flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] min-h-[44px]"
+                className="group hidden sm:flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 min-h-[44px]"
               >
                 <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" />
                 <span>เพิ่มรายการ</span>
@@ -133,7 +133,7 @@ export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps
               <button
                 onClick={onAddClick}
                 aria-label="เพิ่มรายการ"
-                className="flex sm:hidden h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25 active:scale-95 transition-transform"
+                className="flex sm:hidden h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-lg shadow-violet-500/25 active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <Plus className="h-5 w-5" />
               </button>

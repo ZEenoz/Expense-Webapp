@@ -127,7 +127,7 @@ export default function InstallmentsPage() {
 
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto justify-center min-h-[44px]"
+              className="group flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-violet-500 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 w-full sm:w-auto justify-center min-h-[44px]"
             >
               <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" />
               เพิ่มรายการผ่อน
@@ -167,7 +167,7 @@ export default function InstallmentsPage() {
                 <button
                   onClick={handlePayAll}
                   disabled={isDataLoading}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50 w-full sm:w-auto min-h-[44px]"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-400 border border-emerald-500/20 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 w-full sm:w-auto min-h-[44px]"
                 >
                   {isDataLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -185,15 +185,16 @@ export default function InstallmentsPage() {
               <div className="flex items-center gap-2">
                 <ArrowUpDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
                 <select
+                  aria-label="เลือกเดือน"
                   value={selectedMonth}
                   onChange={(e) => {
                     setSelectedMonth(e.target.value);
                     setFilterCategory("all");
                   }}
-                  className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 [color-scheme:dark] min-h-[44px]"
+                  className="rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/25 transition-all [color-scheme:dark] min-h-[44px]"
                 >
                   {displayMonths.map((m) => (
-                    <option key={m} value={m}>
+                    <option key={m} value={m} className="bg-slate-900">
                       {formatMonthThai(m)}
                     </option>
                   ))}
@@ -202,13 +203,14 @@ export default function InstallmentsPage() {
 
               {/* Category filter */}
               <select
+                aria-label="เลือกหมวดหมู่"
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="flex-1 sm:flex-none rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 [color-scheme:dark] min-h-[44px]"
+                className="flex-1 sm:flex-none rounded-xl border border-white/10 bg-slate-900/50 px-3 py-2.5 text-sm text-white outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/25 transition-all [color-scheme:dark] min-h-[44px]"
               >
-                <option value="all">ทุกหมวดหมู่ ({selectedMonthExpenses.items.length})</option>
+                <option value="all" className="bg-slate-900">ทุกหมวดหมู่ ({selectedMonthExpenses.items.length})</option>
                 {availableCategories.map((cat) => (
-                  <option key={cat} value={cat}>
+                  <option key={cat} value={cat} className="bg-slate-900">
                     {cat} ({selectedMonthExpenses.items.filter((e) => e.category === cat).length})
                   </option>
                 ))}
@@ -229,7 +231,7 @@ export default function InstallmentsPage() {
 
       <footer className="border-t border-white/[0.06] py-6 mb-16 lg:mb-0">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-slate-500">
             Expense Tracker &copy; {new Date().getFullYear()} &middot; Built with Next.js + Tailwind CSS
           </p>
         </div>

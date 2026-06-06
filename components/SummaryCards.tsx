@@ -69,14 +69,14 @@ export default function SummaryCards({
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-3 sm:pb-0 sm:overflow-visible sm:snap-none">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
           <div
             key={card.id}
             id={card.id}
-            className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br ${card.gradient} p-5 backdrop-blur-xl transition-all duration-500 hover:border-white/20 hover:scale-[1.02] ${card.shadowColor} shadow-xl animate-fade-in-up ${card.delay}`}
+            className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br ${card.gradient} p-5 backdrop-blur-xl transition-all duration-500 hover:border-white/20 hover:scale-[1.02] ${card.shadowColor} shadow-xl animate-fade-in-up ${card.delay} min-w-[85%] snap-center sm:min-w-0 flex-shrink-0 sm:flex-shrink-1`}
           >
             {/* Glow effect on hover */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />

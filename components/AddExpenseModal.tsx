@@ -88,7 +88,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSubmit }: AddExpens
         <button
           id="close-modal-btn"
           onClick={handleClose}
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white active:bg-white/15 z-10"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white active:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 z-10"
           aria-label="ปิด"
         >
           <X className="h-4 w-4" />
@@ -114,7 +114,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSubmit }: AddExpens
               <div className="mt-6 w-48 h-1 rounded-full bg-white/10 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500 animate-progress-bar" />
               </div>
-              <p className="mt-2 text-xs text-slate-600">ปิดอัตโนมัติ...</p>
+              <p className="mt-2 text-xs text-slate-500">ปิดอัตโนมัติ...</p>
             </div>
           ) : (
             <>
@@ -217,7 +217,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSubmit }: AddExpens
                     type="button"
                     onClick={handleAddCategory}
                     disabled={isAddingCategory || !newCategory.trim()}
-                    className="flex items-center justify-center rounded-xl bg-violet-500/20 px-3 py-2.5 text-xs font-medium text-violet-300 hover:bg-violet-500/30 active:bg-violet-500/40 disabled:opacity-50 min-h-[44px] min-w-[44px]"
+                    className="flex items-center justify-center rounded-xl bg-violet-500/20 px-3 py-2.5 text-xs font-medium text-violet-300 hover:bg-violet-500/30 active:bg-violet-500/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 min-h-[44px] min-w-[44px]"
                   >
                     {isAddingCategory ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                   </button>
@@ -247,7 +247,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSubmit }: AddExpens
                   id="submit-expense-btn"
                   type="submit"
                   disabled={isSubmitting || !formData.itemName || !formData.totalPrice}
-                  className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 min-h-[52px]"
+                  className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-blue-600 px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:shadow-violet-500/40 hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 min-h-[52px]"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center justify-center gap-2">
