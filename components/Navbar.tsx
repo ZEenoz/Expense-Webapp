@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { LogOut, Plus, Receipt } from "lucide-react";
+import { LogOut, Plus, Receipt, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 interface NavbarProps {
@@ -40,8 +40,16 @@ export default function Navbar({ onAddClick, showAddButton = true }: NavbarProps
       <nav className="sticky top-0 z-30 w-full border-b border-white/10 bg-slate-950/80 backdrop-blur-xl flex-shrink-0">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6">
 
-          {/* Mobile: Logo */}
+          {/* Mobile: Logo + hamburger */}
           <div className="flex items-center gap-3 lg:hidden min-w-0">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('toggleSidebar'))}
+              aria-label="เมนู"
+              className="mr-1 flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-slate-300 hover:bg-white/10 lg:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 shadow-lg shadow-violet-500/25">
               <Receipt className="h-5 w-5 text-white" />
             </div>

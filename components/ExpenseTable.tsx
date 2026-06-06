@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Expense } from "@/types/expense";
 import { formatCurrency } from "@/lib/utils";
-import { CreditCard, Check, Loader2, Trash2, Undo2, MoreVertical } from "lucide-react";
+import { CreditCard, Check, Loader2, Undo2, Trash2 } from "lucide-react";
 
 interface ExpenseTableProps {
   expenses: Expense[];
   monthLabel: string;
   isLoading: boolean;
-  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void>;
-  onDelete?: (rowIndex: number) => Promise<boolean | void>;
+  onMarkPaid: (rowIndex: number, paid: boolean, rowId?: string) => Promise<boolean | void>;
+  onDelete?: (rowIndex: number, rowId?: string) => Promise<boolean | void>;
 }
 
 export default function ExpenseTable({
@@ -23,10 +23,11 @@ export default function ExpenseTable({
   const [payingRowIndex, setPayingRowIndex] = useState<number | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState<number | null>(null);
 
-  const handleMarkPaid = async (rowIndex: number, paid: boolean) => {
+  // Use expense's stable UUID when available; falls back to rowIndex for legacy rows
+  const handleMarkPaid = async (rowIndex: number, paid: boolean, rowId?: string) => {
     setPayingRowIndex(rowIndex);
     try {
-      await onMarkPaid(rowIndex, paid);
+      await onMarkPaid(rowIndex, paid, rowId);
       if (paid) {
         setShowPaymentSuccess(rowIndex);
         setTimeout(() => setShowPaymentSuccess(null), 1500);
@@ -84,43 +85,103 @@ export default function ExpenseTable({
           <p className="mt-1 text-sm text-slate-600">No expenses for this month</p>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {unpaid.map((expense, index) => (
-            <ExpenseItem
-              key={`unpaid-${expense.itemName}-${expense.currentInstallment}-${index}`}
-              expense={expense}
-              isPaying={payingRowIndex === expense.rowIndex}
-              showSuccess={showPaymentSuccess === expense.rowIndex}
-              onMarkPaid={handleMarkPaid}
-              onDelete={onDelete}
-            />
-          ))}
+        <div className="overflow-x-auto">
+          {/* Mobile Cards View */}
+          <div className="space-y-3 sm:hidden">
+            {/* Unpaid items first */}
+            {unpaid.map((expense, index) => (
+              <MobileCard
+                key={`unpaid-${expense.itemName}-${expense.currentInstallment}-${index}`}
+                expense={expense}
+                isPaying={payingRowIndex === expense.rowIndex}
+                showSuccess={showPaymentSuccess === expense.rowIndex}
+                onMarkPaid={handleMarkPaid}
+              />
+            ))}
+            {/* Paid items */}
+            {paid.length > 0 && (
+              <>
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="h-px flex-1 bg-emerald-500/20" />
+                  <span className="text-xs font-medium text-emerald-400/60">จ่ายแล้ว ({paid.length})</span>
+                  <div className="h-px flex-1 bg-emerald-500/20" />
+                </div>
+                {paid.map((expense, index) => (
+                  <MobileCard
+                    key={`paid-${expense.itemName}-${expense.currentInstallment}-${index}`}
+                    expense={expense}
+                    isPaying={payingRowIndex === expense.rowIndex}
+                    showSuccess={false}
+                    onMarkPaid={handleMarkPaid}
+                  />
+                ))}
+              </>
+            )}
+          </div>
 
-          {paid.length > 0 && unpaid.length > 0 && (
-            <div className="flex items-center gap-4 py-3">
-              <div className="h-px flex-1 bg-emerald-500/20" />
-              <span className="text-xs font-semibold text-emerald-400/60 uppercase tracking-wider">จ่ายแล้ว ({paid.length})</span>
-              <div className="h-px flex-1 bg-emerald-500/20" />
-            </div>
-          )}
-
-          {paid.map((expense, index) => (
-            <ExpenseItem
-              key={`paid-${expense.itemName}-${expense.currentInstallment}-${index}`}
-              expense={expense}
-              isPaying={payingRowIndex === expense.rowIndex}
-              showSuccess={false}
-              onMarkPaid={handleMarkPaid}
-              onDelete={onDelete}
-            />
-          ))}
+          {/* Desktop Table View */}
+          <table className="hidden w-full sm:table">
+            <thead>
+              <tr className="border-b border-white/[0.06]">
+                <th className="pb-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">รายการ</th>
+                <th className="pb-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 hidden lg:table-cell">หมวดหมู่</th>
+                <th className="pb-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">งวดที่</th>
+                <th className="pb-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 hidden md:table-cell">ความคืบหน้า</th>
+                <th className="pb-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">ยอดจ่าย</th>
+                <th className="pb-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 hidden lg:table-cell">ราคาสุทธิ</th>
+                <th className="pb-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-500">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/[0.04]">
+              {/* Unpaid first */}
+              {unpaid.map((expense, index) => (
+                <DesktopRow
+                  key={`unpaid-${expense.itemName}-${expense.currentInstallment}-${index}`}
+                  expense={expense}
+                  isPaying={payingRowIndex === expense.rowIndex}
+                  showSuccess={showPaymentSuccess === expense.rowIndex}
+                  onMarkPaid={handleMarkPaid}
+                />
+              ))}
+              {/* Paid divider */}
+              {paid.length > 0 && unpaid.length > 0 && (
+                <tr>
+                  <td colSpan={7} className="py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-emerald-500/20" />
+                      <span className="text-xs font-medium text-emerald-400/60">จ่ายแล้ว ({paid.length})</span>
+                      <div className="h-px flex-1 bg-emerald-500/20" />
+                    </div>
+                  </td>
+                </tr>
+              )}
+              {/* Paid items */}
+              {paid.map((expense, index) => (
+                <DesktopRow
+                  key={`paid-${expense.itemName}-${expense.currentInstallment}-${index}`}
+                  expense={expense}
+                  isPaying={payingRowIndex === expense.rowIndex}
+                  showSuccess={false}
+                  onMarkPaid={handleMarkPaid}
+                />
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t border-white/[0.08]">
+                <td colSpan={4} className="pt-4 text-sm font-semibold text-slate-400">รวมทั้งหมด</td>
+                <td className="pt-4 text-right text-lg font-bold text-white">{formatCurrency(totalAmount)}</td>
+                <td className="hidden lg:table-cell" />
+                <td />
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
     </div>
   );
 }
 
-function ExpenseItem({
+function MobileCard({
   expense,
   isPaying,
   showSuccess,
@@ -138,44 +199,36 @@ function ExpenseItem({
 
   return (
     <div
-      className={`group relative flex items-center gap-3 rounded-2xl border border-white/[0.06] p-3 sm:p-4 transition-all duration-200 hover:border-white/10 ${
-        isPaid
-          ? "bg-emerald-500/[0.02] border-emerald-500/10 opacity-60"
+      className={`rounded-2xl border p-4 shadow-sm transition-all duration-300 ${expense.paidStatus
+          ? "border-emerald-500/10 bg-emerald-500/[0.02] opacity-60"
           : showSuccess
-          ? "bg-emerald-500/10 border-emerald-500/30"
-          : "bg-white/[0.02] hover:bg-white/[0.04]"
-      }`}
-    >
-      {/* Icon */}
-      <div
-        className={`flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-xl text-sm sm:text-base font-bold shadow-sm ${
-          isPaid
-            ? "bg-emerald-500/20 text-emerald-400"
-            : "bg-gradient-to-br from-violet-500/15 to-blue-500/15 text-violet-400"
+            ? "border-emerald-500/40 bg-emerald-500/10"
+            : "border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.06]"
         }`}
-      >
-        {isPaid ? <Check className="h-5 w-5 sm:h-6 sm:w-6" /> : expense.itemName.charAt(0).toUpperCase()}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <p className={`truncate text-sm sm:text-base font-semibold leading-tight ${isPaid ? "text-slate-400 line-through" : "text-white"}`}>
+    >
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${expense.paidStatus
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-gradient-to-br from-violet-500/20 to-blue-500/20 text-violet-400"
+            }`}>
+            {expense.paidStatus ? <Check className="h-5 w-5" /> : expense.itemName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h3 className={`font-bold leading-tight ${expense.paidStatus ? "text-slate-400 line-through" : "text-white"}`}>
               {expense.itemName}
-            </p>
+            </h3>
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
               {expense.category && (
-                <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold ${
-                  isPaid ? "bg-slate-800 text-slate-500" : "bg-violet-500/15 text-violet-300"
-                }`}>
+                <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold ${isPaid ? "bg-slate-800 text-slate-500" : "bg-violet-500/15 text-violet-300"
+                  }`}>
                   {expense.category}
                 </span>
               )}
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium">
                 งวดที่ {expense.currentInstallment}/{expense.totalInstallments}
               </span>
-              
+
               {/* Progress Bar (Visible on desktop) */}
               <div className="hidden sm:flex items-center gap-2 ml-1">
                 <div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10">
@@ -199,15 +252,16 @@ function ExpenseItem({
               <span className="text-[10px] text-slate-500">{Math.round(progress)}%</span>
             </div>
           </div>
-
-          {/* Amount */}
-          <div className="flex-shrink-0 text-right">
-            <p className={`text-sm sm:text-base font-bold tracking-tight ${isPaid ? "text-slate-500 line-through" : "text-white"}`}>
-              {formatCurrency(expense.monthlyPayment)}
-            </p>
-            <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 font-medium">
-              รวม {formatCurrency(expense.totalPrice)}
-            </p>
+        </div>
+        <div className="text-right">
+          <p className={`text-lg font-black tracking-tight ${expense.paidStatus ? "text-slate-500 line-through" : "text-white"}`}>
+            {formatCurrency(expense.monthlyPayment)}
+          </p>
+          <div className="mt-1 flex items-center justify-end gap-1">
+            <span className="text-[10px] text-slate-500">งวดที่</span>
+            <span className="text-xs font-bold text-violet-300">
+              {expense.currentInstallment}/{expense.totalInstallments}
+            </span>
           </div>
         </div>
       </div>
@@ -226,6 +280,101 @@ function ExpenseItem({
   );
 }
 
+/* ─── Desktop Row ─── */
+function DesktopRow({
+  expense,
+  isPaying,
+  showSuccess,
+  onMarkPaid,
+}: {
+  expense: Expense;
+  isPaying: boolean;
+  showSuccess: boolean;
+  onMarkPaid: (rowIndex: number, paid: boolean) => Promise<boolean | void> | void;
+}) {
+  const progress = (expense.currentInstallment / expense.totalInstallments) * 100;
+
+  return (
+    <tr
+      className={`group transition-all duration-300 ${expense.paidStatus
+          ? "opacity-60"
+          : showSuccess
+            ? "bg-emerald-500/10"
+            : "hover:bg-white/[0.03]"
+        }`}
+    >
+      <td className="py-4 pr-4">
+        <div className="flex items-center gap-3">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold shadow-sm ${expense.paidStatus
+                ? "bg-emerald-500/20 text-emerald-400"
+                : "bg-gradient-to-br from-violet-500/20 to-blue-500/20 text-violet-400"
+              }`}
+          >
+            {expense.paidStatus ? <Check className="h-5 w-5" /> : expense.itemName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className={`font-semibold ${expense.paidStatus ? "text-slate-400 line-through" : "text-white"}`}>
+              {expense.itemName}
+            </p>
+            {expense.category && <p className="text-[10px] text-slate-500 lg:hidden">{expense.category}</p>}
+          </div>
+        </div>
+      </td>
+      <td className="py-4 pr-4 hidden lg:table-cell">
+        {expense.category ? (
+          <span className="inline-flex items-center rounded-lg bg-slate-800 px-2.5 py-1 text-[10px] font-medium text-slate-400 border border-white/5">
+            {expense.category}
+          </span>
+        ) : (
+          <span className="text-slate-600 italic text-xs">-</span>
+        )}
+      </td>
+      <td className="py-4 pr-4">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-semibold text-violet-300">
+            {expense.currentInstallment}/{expense.totalInstallments}
+          </span>
+          <div className="h-1 w-12 overflow-hidden rounded-full bg-white/5 md:hidden">
+            <div
+              className="h-full rounded-full bg-violet-500 transition-all duration-700"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </td>
+      <td className="py-4 pr-4 hidden md:table-cell">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-20 xl:w-32 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-700"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="text-[10px] font-medium text-slate-500">{Math.round(progress)}%</span>
+        </div>
+      </td>
+      <td className="py-4 pr-4 text-right">
+        <span className={`font-bold ${expense.paidStatus ? "text-slate-500 line-through" : "text-white"}`}>
+          {formatCurrency(expense.monthlyPayment)}
+        </span>
+      </td>
+      <td className="py-4 pr-4 text-right hidden lg:table-cell">
+        <span className="text-sm font-medium text-slate-400">{formatCurrency(expense.totalPrice)}</span>
+      </td>
+      <td className="py-4 text-center">
+        <PayButton
+          expense={expense}
+          isPaying={isPaying}
+          showSuccess={showSuccess}
+          onMarkPaid={onMarkPaid}
+        />
+      </td>
+    </tr>
+  );
+}
+
+/* ─── Pay Button ─── */
 function PayButton({
   expense,
   isPaying,
@@ -241,7 +390,7 @@ function PayButton({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
+
   const handleDelete = async () => {
     if (window.confirm("ต้องการลบรายการนี้ใช่หรือไม่?")) {
       setIsDeleting(true);
@@ -306,7 +455,7 @@ function PayButton({
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
       {renderPay()}
-      
+
       {/* Delete Button - Hidden on mobile, shown in menu. Wait, let's keep it visible on mobile to match the screenshot! */}
       {onDelete && (
         <button

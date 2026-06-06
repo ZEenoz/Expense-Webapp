@@ -9,7 +9,8 @@ export interface Expense {
   category: string;
   paidStatus: boolean; // true = paid, false = unpaid
   userId: string;
-  rowIndex?: number; // Sheet row index for updates
+  rowIndex?: number; // Sheet row index (legacy, kept for backward compat)
+  rowId?: string;   // Stable UUID — preferred identifier for mutations
 }
 
 export interface MonthSummary {

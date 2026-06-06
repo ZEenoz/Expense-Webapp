@@ -24,7 +24,15 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     checkMobile();
     setMounted(true);
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+
+    // Listen for global toggle event from Navbar (mobile hamburger)
+    const handleToggle = () => setIsSidebarOpen((prev) => !prev);
+    window.addEventListener("toggleSidebar", handleToggle as EventListener);
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("toggleSidebar", handleToggle as EventListener);
+    };
   }, []);
 
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
@@ -42,6 +50,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
           ${mounted && !isMobile
             ? isSidebarOpen ? "lg:ml-64" : "lg:ml-20"
             : ""}
+          } ${mounted && isMobile ? "pb-20" : ""}
         `}
       >
         {children}

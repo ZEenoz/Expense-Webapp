@@ -157,10 +157,10 @@ export default function TransactionList({
               <div className="relative sm:hidden ml-1.5">
                 <button
                   onClick={() => setOpenMenuId(isMenuOpen ? null : tx.rowIndex ?? null)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 bg-white/5 active:bg-white/10 transition-colors"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 bg-white/5 active:bg-white/10 transition-colors"
                   aria-label="เมนูเพิ่มเติม"
                 >
-                  <MoreVertical className="h-4 w-4" />
+                  <MoreVertical className="h-5 w-5" />
                 </button>
 
                 {/* Dropdown menu */}

@@ -27,11 +27,15 @@ export function useExpenses() {
     setIsLoading(false);
   }, [idToken]);
 
-  const markPaid = useCallback(async (rowIndex: number, paid: boolean) => {
+  const markPaid = useCallback(async (rowIndex: number, paid: boolean, rowId?: string) => {
     if (!idToken) return false;
+    // Prefer UUID (drift-safe); fall back to rowIndex for legacy rows without UUID
+    const body = rowId
+      ? { rowId, paid }
+      : { rowIndex, paid };
     const res = await apiClient("/api/expenses", {
       method: "PATCH",
-      body: JSON.stringify({ rowIndex, paid }),
+      body: JSON.stringify(body),
     }, idToken);
     
     if (res.success) {
@@ -44,11 +48,15 @@ export function useExpenses() {
     }
   }, [idToken, fetchExpenses, showToast]);
 
-  const payAll = useCallback(async (rowIndices: number[]) => {
+  const payAll = useCallback(async (rowIndices: number[], rowIds?: string[]) => {
     if (!idToken || rowIndices.length === 0) return false;
+    // Prefer UUIDs when available
+    const body = (rowIds && rowIds.length > 0)
+      ? { rowIds, paid: true }
+      : { rowIndices, paid: true };
     const res = await apiClient("/api/expenses", {
       method: "PATCH",
-      body: JSON.stringify({ rowIndices, paid: true }),
+      body: JSON.stringify(body),
     }, idToken);
     
     if (res.success) {
@@ -78,15 +86,23 @@ export function useExpenses() {
     }
   }, [idToken, fetchExpenses, showToast]);
 
-  const deleteExpense = useCallback(async (rowIndex: number) => {
+  const deleteExpense = useCallback(async (rowIndex: number, rowId?: string) => {
     if (!idToken) return false;
-    const res = await apiClient(`/api/expenses?rowIndex=${rowIndex}`, {
-      method: "DELETE",
-    }, idToken);
+    
+    if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้? การลบนี้ไม่สามารถย้อนกลับได้")) {
+      return false;
+    }
+
+    // Prefer UUID (drift-safe); fall back to rowIndex for legacy rows without UUID
+    const url = rowId
+      ? `/api/expenses?rowId=${encodeURIComponent(rowId)}`
+      : `/api/expenses?rowIndex=${rowIndex}`;
+
+    const res = await apiClient(url, { method: "DELETE" }, idToken);
     
     if (res.success) {
       await fetchExpenses();
-      showToast("ลบรายการเรียบร้อย", "success");
+      showToast("ลบรายการเรียบร้อยแล้ว", "success");
       return true;
     } else {
       showToast(res.error || "ไม่สามารถลบรายการได้", "error");
